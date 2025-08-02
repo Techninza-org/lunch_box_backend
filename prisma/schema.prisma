@@ -1,0 +1,273 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  phoneNumber  String?       @unique
+  isActive     Boolean       @default(true)
+  isVerified   Boolean       @default(true)
+  profileImage String? // URL of the user's profile image
+  longitude    Float?
+  latitude     Float?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  UserAddress  UserAddress[]
+
+  // UserCurrentLocation UserCurrentLocation[]
+}
+
+model UserAddress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  longitude Float
+  latitude  Float
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// model UserCurrentLocation {
+//   id        Int      @id @default(autoincrement())
+//   userId    Int
+//   longitude Float
+//   latitude  Float
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   user User @relation(fields: [userId], references: [id])
+// }
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Vendor {
+  id           Int     @id @default(autoincrement())
+  name         String
+  email        String  @unique
+  password     String
+  phoneNumber  String  @unique
+  businessName String?
+  logo         String?
+  gallery      String? // Comma-separated image URLs or use a related model
+  description  String?
+  phoneNumber2 String?
+
+  // Address
+  address   String?
+  city      String?
+  state     String?
+  longitude Float?
+  latitude  Float?
+
+  // Time Windows
+  breakfastStart String?
+  breakfastEnd   String?
+  lunchStart     String?
+  lunchEnd       String?
+  eveningStart   String?
+  eveningEnd     String?
+  dinnerStart    String?
+  dinnerEnd      String?
+
+  // Status
+  isActive Boolean      @default(false)
+  status   VendorStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  VendorWallet            VendorWallet[]
+  VendorWalletTransaction VendorWalletTransaction[]
+  Meal                    Meal[]
+}
+
+model VendorWallet {
+  id        Int      @id @default(autoincrement())
+  vendorId  Int
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+model VendorWalletTransaction {
+  id        Int                   @id @default(autoincrement())
+  vendorId  Int
+  amount    Float
+  type      WalletTransactionType
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+}
+
+// products
+// ✅ ENUMS
+enum MealConfigType {
+  SINGLE
+  CUSTOMIZABLE
+}
+
+enum MealType {
+  Lunch
+  Dinner
+  Breakfast
+  Evening
+}
+
+enum CuisineType {
+  Marathi
+  NorthIndian
+  SouthIndian
+  Gujarati
+  Bengali
+  Continental
+}
+
+// MEAL
+model Meal {
+  id          Int            @id @default(autoincrement())
+  vendorId    Int
+  title       String // e.g., "Protein Thali"
+  description String? // e.g., "Includes dal, roti, sabzi"
+  image       String? // main image thumbnail
+  type        MealType // lunch or dinner
+  configType  MealConfigType // SINGLE or CUSTOMIZABLE
+  cuisine     CuisineType
+  isVeg       Boolean // true/false
+
+  // Nutrition Info
+  energyKcal  Int? // e.g. 500
+  proteinGram Float? // e.g. 20.5
+  fatGram     Float?
+  fiberGram   Float?
+  carbsGram   Float?
+
+  basePrice   Float // e.g. 149.99
+  isAvailable Boolean @default(true)
+  isWeekly    Boolean @default(false)
+
+  // ✅ Relations
+  vendor           Vendor             @relation(fields: [vendorId], references: [id])
+  mealImages       MealImage[] // additional images
+  mealOptionGroups MealOptionGroup[] // config option groups
+  dietaryTags      MealDietaryTag[] // "Gluten Free", etc
+  ingredients      MealIngredient[] // "Paneer", "Cumin", etc
+  availableDays    MealAvailableDay[] // "MON", "TUE", etc
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  isDeleted Boolean   @default(false) // soft delete
+  deletedAt DateTime? // soft delete timestamp
+}
+
+model MealAvailableDay {
+  id     Int    @id @default(autoincrement())
+  mealId Int
+  day    String // e.g. "MON", "TUE", "FRI"
+
+  meal Meal @relation(fields: [mealId], references: [id])
+}
+
+model MealImage {
+  id     Int    @id @default(autoincrement())
+  mealId Int
+  url    String // image URL
+
+  meal Meal @relation(fields: [mealId], references: [id])
+}
+
+model MealOptionGroup {
+  id         Int     @id @default(autoincrement())
+  mealId     Int
+  title      String // e.g. "Choose 1 Roti"
+  isRequired Boolean
+  minSelect  Int?
+  maxSelect  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meal    Meal         @relation(fields: [mealId], references: [id])
+  options MealOption[]
+}
+
+model MealOption {
+  id                Int     @id @default(autoincrement())
+  mealOptionGroupId Int
+  name              String // e.g. "Tandoori Roti"
+  price             Float // e.g. 10
+  image             String? // optional image
+  isDefault         Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  optionGroup MealOptionGroup @relation(fields: [mealOptionGroupId], references: [id])
+}
+
+model MealDietaryTag {
+  id     Int    @id @default(autoincrement())
+  mealId Int
+  tag    String // e.g. "High Protein", "Low Carb"
+
+  meal Meal @relation(fields: [mealId], references: [id])
+}
+
+model MealIngredient {
+  id     Int    @id @default(autoincrement())
+  mealId Int
+  name   String // e.g. "Paneer", "Tomato"
+
+  meal Meal @relation(fields: [mealId], references: [id])
+}
+
+model Banner {
+  id          Int      @id @default(autoincrement())
+  image       String // URL of the banner image
+  title       String? // Optional title for the banner
+  description String? // Optional description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+}

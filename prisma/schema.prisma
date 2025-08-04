@@ -160,6 +160,16 @@ model VendorWallet {
   vendor Vendor @relation(fields: [vendorId], references: [id])
 }
 
+model Settings {
+  id          Int      @id @default(autoincrement())
+  gst         Float
+  vendorCommission Float
+  deliveryPartnerCommission Float
+  adminCommission Float
+  deliveryChargePerKilometer Float
+  platformCharge Float
+}
+
 enum WalletTransactionType {
   CREDIT
   DEBIT

@@ -111,7 +111,33 @@ export const addToCart = async (req, res) => {
       }
     }
 
-    // Check if item already exists in cart
+    // Check if cart has items from different vendor
+    const existingCartItems = await prisma.cartItem.findMany({
+      where: { userId: userId },
+      include: {
+        meal: {
+          select: {
+            vendorId: true,
+          },
+        },
+      },
+    });
+
+    // If cart has items and they're from a different vendor, clear the cart first
+    if (existingCartItems.length > 0) {
+      const existingVendorId = existingCartItems[0].meal.vendorId;
+      if (existingVendorId !== meal.vendorId) {
+        // Clear cart - different vendor detected
+        await prisma.cartItem.deleteMany({
+          where: { userId: userId },
+        });
+        console.log(
+          `Cart cleared for user ${userId} - switching from vendor ${existingVendorId} to vendor ${meal.vendorId}`
+        );
+      }
+    }
+
+    // Check if item already exists in cart (after potential clearing)
     const existingCartItem = await prisma.cartItem.findUnique({
       where: {
         userId_mealId: {
@@ -204,12 +230,30 @@ export const addToCart = async (req, res) => {
       });
     }
 
+    // Determine response message
+    let responseMessage;
+    if (
+      existingCartItems.length > 0 &&
+      existingCartItems[0].meal.vendorId !== meal.vendorId
+    ) {
+      responseMessage =
+        "Previous cart items were cleared. Item added from new restaurant successfully";
+    } else if (existingCartItem) {
+      responseMessage = "Cart item updated successfully";
+    } else {
+      responseMessage = "Item added to cart successfully";
+    }
+
     res.status(200).json({
       success: true,
-      message: existingCartItem
-        ? "Cart item updated successfully"
-        : "Item added to cart successfully",
+      message: responseMessage,
       data: cartItem,
+      meta: {
+        currentVendorId: meal.vendorId,
+        wasCartCleared:
+          existingCartItems.length > 0 &&
+          existingCartItems[0].meal.vendorId !== meal.vendorId,
+      },
     });
   } catch (error) {
     console.error("Error adding to cart:", error);

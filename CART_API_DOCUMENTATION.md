@@ -40,6 +40,27 @@ All cart endpoints are prefixed with: `/api/users/cart`
 - **Endpoint:** `DELETE /api/users/cart/clear`
 - **Description:** Remove all items from the user's cart.
 
+## Important Cart Behavior
+
+### Single Vendor Policy
+
+The cart system enforces **single-vendor ordering**:
+
+- Users can add multiple items from the **same vendor/restaurant** to their cart
+- When adding items from a **different vendor**, the cart is **automatically cleared first**
+- Users receive clear notification when their cart is cleared due to vendor switching
+
+**Example Scenarios:**
+
+1. **Same Vendor**: Adding items from Restaurant A → Items are added to existing cart
+2. **Different Vendor**: Cart has items from Restaurant A, adding from Restaurant B → Cart is cleared first, then Restaurant B item is added
+
+### Response Messages
+
+- `"Item added to cart successfully"` - Normal addition
+- `"Cart item updated successfully"` - Updating existing item quantity
+- `"Previous cart items were cleared. Item added from new restaurant successfully"` - Vendor switch occurred
+
 ---
 
 ## Detailed API Specifications
@@ -78,6 +99,30 @@ All cart endpoints are prefixed with: `/api/users/cart`
   "data": {
     "id": 1,
     "userId": 123,
+    "mealId": 1,
+    "quantity": 2,
+    "totalPrice": 458.00,
+    "deliveryDate": "2025-08-05T12:00:00Z",
+    "meal": {
+      "id": 1,
+      "title": "Dal Rice Combo",
+      "image": "/uploads/meals/dal-rice.jpg",
+      "basePrice": 229.00,
+      "configType": "SINGLE",
+      "type": "Lunch",
+      "vendor": {
+        "id": 1,
+        "name": "Vendor Name",
+        "businessName": "Restaurant Business Name"
+      }
+    },
+    "selectedOptions": []
+  },
+  "meta": {
+    "currentVendorId": 1,
+    "wasCartCleared": false
+  }
+}
     "mealId": 1,
     "quantity": 2,
     "totalPrice": 299.98,

@@ -479,6 +479,46 @@ export const verifyDeliveryPartner = async (req, res) => {
   }
 };
 
+export const getMealsByVendorId = async (req, res) => {
+  const vendorId = parseInt(req.params.id);
+
+  if (isNaN(vendorId)) {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    const meals = await prisma.meal.findMany({
+      where: {
+        vendorId,
+        isDeleted: false, // Optional: exclude soft-deleted meals
+      },
+      include: {
+        mealImages: true,
+        mealOptionGroups: {
+          include: {
+            options: true,
+          },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    if (meals.length === 0) {
+      return res.status(200).json({ message: "No meals found for this vendor", data: [] });
+    }
+
+    res.status(200).json({
+      message: "Meals fetched successfully",
+      data: meals,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch meals", details: error.message });
+  }
+};
+
+
 
 
 

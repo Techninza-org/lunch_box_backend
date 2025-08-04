@@ -221,6 +221,7 @@ model Meal {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   isDeleted Boolean   @default(false) // soft delete
+  isVerified Boolean @default(false) // for vendor verification
   deletedAt DateTime? // soft delete timestamp
 }
 

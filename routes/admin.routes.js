@@ -20,7 +20,8 @@ import {
   updateDeliveryPartner,
   getDeliveryPartnerById,
   getUnverifiedDeliveryPartners,
-  verifyDeliveryPartner
+  verifyDeliveryPartner,
+  getMealsByVendorId,
 
 } from "../controller/admin.controller.js";
 
@@ -53,6 +54,7 @@ router.get("/get-pending-vendors", getAllVendorsWithPendingStatus);
 router.get("/get-vendor-by-id/:id", getVendorById);
 router.put("/update-vendor/:id", updateVendor);
 router.patch("/update-vendor-status/:id", updateVendorStatus);
+router.get("/get-vendor-meals/:id", getMealsByVendorId);
 
 //----------Delivery_Partner---------//
 router.get("/get-all-delivery-partners", getAllDeliveryPartners);

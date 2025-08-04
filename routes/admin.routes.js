@@ -12,8 +12,16 @@ import {
   deleteUser,
   softDeleteUser,
   getAllVendors,
+  getAllVendorsWithPendingStatus,
   getVendorById,
-  updateVendor
+  updateVendor,
+  updateVendorStatus,
+  getAllDeliveryPartners,
+  updateDeliveryPartner,
+  getDeliveryPartnerById,
+  getUnverifiedDeliveryPartners,
+  verifyDeliveryPartner
+
 } from "../controller/admin.controller.js";
 
 // Define admin routes here
@@ -41,7 +49,16 @@ router.delete("/soft-delete-user/:id", softDeleteUser);
 
 //----------Vendor---------//
 router.get("/get-all-vendors", getAllVendors);
+router.get("/get-pending-vendors", getAllVendorsWithPendingStatus);
 router.get("/get-vendor-by-id/:id", getVendorById);
 router.put("/update-vendor/:id", updateVendor);
+router.patch("/update-vendor-status/:id", updateVendorStatus);
+
+//----------Delivery_Partner---------//
+router.get("/get-all-delivery-partners", getAllDeliveryPartners);
+router.get("/get-delivery-partner-by-id/:id", getDeliveryPartnerById);
+router.put("/update-delivery-partner/:id", updateDeliveryPartner);
+router.get("/get-unverified-partners", getUnverifiedDeliveryPartners);
+router.patch("/verify-delivery-partner/:id", verifyDeliveryPartner);
 
 export default router;

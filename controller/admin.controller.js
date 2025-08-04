@@ -217,6 +217,24 @@ export const getAllVendors = async (req, res) => {
   }
 };
 
+export const getAllVendorsWithPendingStatus = async (req, res) => {
+  try {
+    const vendors = await prisma.vendor.findMany({
+      where: {
+        status: "PENDING", // enum value as string
+      },
+    });
+
+    if (vendors.length === 0) {
+      return res.status(200).json({ message: "No pending vendors found", data: [] });
+    }
+
+    res.status(200).json({ message: "Pending vendors fetched successfully", data: vendors });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch pending vendors", details: error.message });
+  }
+};
+
 // Get a single vendor
 export const getVendorById = async (req, res) => {
   const id = parseInt(req.params.id);
@@ -264,6 +282,206 @@ export const updateVendor = async (req, res) => {
     res.status(500).json({ error: "Failed to update vendor", details: error.message });
   }
 };
+
+export const updateVendorStatus = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { status } = req.body;
+
+  // Validate ID
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  // Validate status
+  const allowedStatuses = ["PENDING", "APPROVED", "REJECTED"];
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ error: "Invalid status value" });
+  }
+
+  try {
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    const updated = await prisma.vendor.update({
+      where: { id },
+      data: {
+        status,
+        isActive: status === "APPROVED", // Optional: activate on approval
+      },
+    });
+
+    res.status(200).json({
+      message: `Vendor status updated to ${status}`,
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to update vendor status",
+      details: error.message,
+    });
+  }
+};
+
+//------------------DELIVERY_PARTNER_CRUD----------------//
+
+export const getAllDeliveryPartners = async (req, res) => {
+  try {
+    const partners = await prisma.deliveryPartner.findMany();
+
+    if (partners.length === 0) {
+      return res.status(200).json({ message: "No delivery partners found", data: [] });
+    }
+
+    res.status(200).json({ message: "Delivery partners fetched successfully", data: partners });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch delivery partners" });
+  }
+};
+
+// GET one
+export const getDeliveryPartnerById = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) return res.status(400).json({ error: "Invalid ID" });
+
+  try {
+    const partner = await prisma.deliveryPartner.findUnique({ where: { id } });
+    if (!partner) return res.status(404).json({ error: "Delivery partner not found" });
+    res.json(partner);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch delivery partner" });
+  }
+};
+
+// Update delivery partner
+export const updateDeliveryPartner = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid delivery partner ID" });
+  }
+
+  try {
+    const existingPartner = await prisma.deliveryPartner.findUnique({
+      where: { id },
+    });
+
+    if (!existingPartner) {
+      return res.status(404).json({ error: "Delivery partner not found" });
+    }
+
+    const {
+      name,
+      // email,
+      phoneNumber,
+      // profileImage,
+      // identification,
+      longitude,
+      latitude,
+      address,
+      city,
+      state,
+      zipCode,
+      phoneNumber2,
+      isActive,
+      isVerified,
+    } = req.body;
+
+    const updatedPartner = await prisma.deliveryPartner.update({
+      where: { id },
+      data: {
+        name,
+        // email,
+        phoneNumber,
+        // profileImage,
+        // identification,
+        longitude,
+        latitude,
+        address,
+        city,
+        state,
+        zipCode,
+        phoneNumber2,
+        isActive,
+        isVerified,
+      },
+    });
+
+    res.status(200).json({
+      message: "Delivery partner updated successfully",
+      data: updatedPartner,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to update delivery partner",
+      details: error.message,
+    });
+  }
+};
+
+export const getUnverifiedDeliveryPartners = async (req, res) => {
+  try {
+    const partners = await prisma.deliveryPartner.findMany({
+      where: { isVerified: false },
+    });
+
+    if (partners.length === 0) {
+      return res.status(200).json({ message: "No unverified delivery partners found", data: [] });
+    }
+
+    res.status(200).json({
+      message: "Unverified delivery partners fetched successfully",
+      data: partners,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to fetch unverified delivery partners",
+      details: error.message,
+    });
+  }
+};
+
+export const verifyDeliveryPartner = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid delivery partner ID" });
+  }
+
+  try {
+    const existingPartner = await prisma.deliveryPartner.findUnique({
+      where: { id },
+    });
+
+    if (!existingPartner) {
+      return res.status(404).json({ error: "Delivery partner not found" });
+    }
+
+    const updatedPartner = await prisma.deliveryPartner.update({
+      where: { id },
+      data: { isVerified: true,
+        isActive: true, // Optionally activate the partner upon verification
+      },
+    });
+
+    res.status(200).json({
+      message: "Delivery partner verified successfully",
+      data: updatedPartner,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to verify delivery partner",
+      details: error.message,
+    });
+  }
+};
+
+
+
+
 
 
 

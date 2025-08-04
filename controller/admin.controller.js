@@ -225,7 +225,6 @@ export const getAllVendors = async (req, res) => {
   }
 };
 
-
 export const getAllVendorsWithPendingStatus = async (req, res) => {
   try {
     const vendors = await prisma.vendor.findMany({
@@ -496,17 +495,17 @@ export const getMealsByVendorId = async (req, res) => {
   }
 
   try {
-    const meals = await prisma.meal.findMany({
+    // Fetch verified meals
+    const verifiedMeals = await prisma.meal.findMany({
       where: {
         vendorId,
-        isDeleted: false, // Optional: exclude soft-deleted meals
+        isDeleted: false,
+        isVerified: true,
       },
       include: {
         mealImages: true,
         mealOptionGroups: {
-          include: {
-            options: true,
-          },
+          include: { options: true },
         },
         dietaryTags: true,
         ingredients: true,
@@ -514,16 +513,63 @@ export const getMealsByVendorId = async (req, res) => {
       },
     });
 
-    if (meals.length === 0) {
-      return res.status(200).json({ message: "No meals found for this vendor", data: [] });
-    }
+    // Fetch unverified meals
+    const unverifiedMeals = await prisma.meal.findMany({
+      where: {
+        vendorId,
+        isDeleted: false,
+        isVerified: false,
+      },
+      include: {
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
 
     res.status(200).json({
       message: "Meals fetched successfully",
-      data: meals,
+      verified: verifiedMeals,
+      unverified: unverifiedMeals,
     });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch meals", details: error.message });
+  }
+};
+
+export const verifyMeal = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const existingMeal = await prisma.meal.findUnique({
+      where: { id: mealId },
+    });
+
+    if (!existingMeal) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    const updatedMeal = await prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        isVerified: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "Meal verified successfully",
+      data: updatedMeal,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to verify meal", details: error.message });
   }
 };
 

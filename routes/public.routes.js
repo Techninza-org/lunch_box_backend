@@ -10,10 +10,13 @@ import {
   userRegister,
   vendorRegister,
   vendorLogin,
+  deliveryPartnerRegister,
+  deliveryPartnerLogin,
 } from "../controller/auth.controller.js";
 
 // Use global multer utility for vendor logos
 const logoUpload = getMulterUpload("vendors");
+const deliveryPartner = getMulterUpload("delivery-partners");
 
 //admin routes
 router.post("/admin-register", adminRegister);
@@ -25,6 +28,13 @@ router.post("/user-login", userLogin);
 
 //vendor routes
 router.post("/vendor-register", logoUpload.single("logo"), vendorRegister);
-router.post("/vendor-login", vendorLogin); // Assuming vendor login uses the same user login logic
+router.post("/vendor-login", vendorLogin);
 
+//delivery partner routes
+router.post(
+  "/delivery-partner-register",
+  deliveryPartner.any(),
+  deliveryPartnerRegister
+);
+router.post("/delivery-partner-login", deliveryPartnerLogin);
 export default router;

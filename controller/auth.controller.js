@@ -3,6 +3,19 @@ const prisma = new PrismaClient();
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+// Helper to index files by fieldname
+function indexFiles(files) {
+  const map = {};
+  if (!files) return map;
+  for (const file of files) {
+    if (!map[file.fieldname]) {
+      map[file.fieldname] = [];
+    }
+    map[file.fieldname].push(file);
+  }
+  return map;
+}
+
 // admin registration
 export const adminRegister = async (req, res) => {
   const { name, email, password } = req.body;
@@ -309,6 +322,159 @@ export const vendorLogin = async (req, res) => {
       .json({ message: "Login successful", vendor: vendorData, token });
   } catch (error) {
     console.error("Error logging in vendor:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// delivery partner registration
+export const deliveryPartnerRegister = async (req, res) => {
+  try {
+    const filesByField = indexFiles(req.files);
+    const {
+      name,
+      email,
+      phoneNumber,
+      password,
+      address,
+      city,
+      state,
+      zipCode,
+      phoneNumber2,
+    } = req.body;
+
+    if (
+      !name ||
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !address ||
+      !city ||
+      !state ||
+      !zipCode
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // get profile image and document images from request
+    const profileImage = filesByField["profile-image"]
+      ? `uploads/delivery-partners/${filesByField["profile-image"][0].filename}`
+      : null;
+    const documentImages = filesByField["documents"]
+      ? filesByField["documents"].map(
+          (file) => `uploads/delivery-partners/${file.filename}`
+        )
+      : [];
+
+    // Validate profile image and document images
+    if (!profileImage || documentImages.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Profile image and documents are required" });
+    }
+
+    // Check if delivery partner already exists
+    const existingPartner = await prisma.deliveryPartner.findUnique({
+      where: { email, phoneNumber },
+      select: { id: true },
+    });
+
+    if (existingPartner) {
+      return res.status(409).json({
+        message: "Delivery partner email or phone number already exists",
+      });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create new delivery partner
+    const newPartner = await prisma.deliveryPartner.create({
+      data: {
+        name,
+        email,
+        phoneNumber,
+        password: hashedPassword,
+        address,
+        city,
+        state,
+        zipCode,
+        phoneNumber2,
+        isActive: false,
+        isVerified: false,
+        profileImage,
+        identification: documentImages.join(","),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true,
+        createdAt: true,
+      },
+    });
+
+    res.status(201).json({
+      message: "Delivery partner registered successfully",
+      partner: newPartner,
+    });
+  } catch (error) {
+    console.error("Error registering delivery partner:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// delivery partner login
+export const deliveryPartnerLogin = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
+  try {
+    // Find delivery partner by email
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { email },
+    });
+
+    if (!deliveryPartner) {
+      return res
+        .status(404)
+        .json({ message: "Invalid email or password or account not verified" });
+    }
+    // Check if the account is verified
+    if (!deliveryPartner.isVerified) {
+      return res.status(403).json({ message: "Account not verified" });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      deliveryPartner.password
+    );
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // Exclude password from response
+    const { password: _, ...deliveryPartnerData } = deliveryPartner;
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: deliveryPartner.id, role: "DELIVERY" },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      deliveryPartner: deliveryPartnerData,
+      token,
+    });
+  } catch (error) {
+    console.error("Error logging in delivery partner:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

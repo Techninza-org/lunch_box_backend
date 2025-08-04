@@ -30,6 +30,8 @@ model User {
   phoneNumber  String?       @unique
   isActive     Boolean       @default(true)
   isVerified   Boolean       @default(true)
+  isDeleted    Boolean       @default(false)
+  deletedAt    DateTime?
   profileImage String? // URL of the user's profile image
   longitude    Float?
   latitude     Float?

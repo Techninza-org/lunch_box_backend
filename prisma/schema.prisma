@@ -59,6 +59,7 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   UserAddress  UserAddress[]
+  CartItem     CartItem[]
 
   // UserCurrentLocation UserCurrentLocation[]
 }
@@ -225,6 +226,7 @@ model Meal {
   dietaryTags      MealDietaryTag[] // "Gluten Free", etc
   ingredients      MealIngredient[] // "Paneer", "Cumin", etc
   availableDays    MealAvailableDay[] // "MON", "TUE", etc
+  cartItems        CartItem[] // cart items containing this meal
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -302,4 +304,35 @@ model Banner {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(true)
+}
+
+// CART MODELS
+model CartItem {
+  id           Int       @id @default(autoincrement())
+  userId       Int
+  mealId       Int
+  quantity     Int       @default(1)
+  totalPrice   Float // base price + options price * quantity
+  deliveryDate DateTime? // when user wants this meal delivered
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id])
+  meal            Meal             @relation(fields: [mealId], references: [id])
+  selectedOptions CartItemOption[] // selected options for customizable meals
+
+  @@unique([userId, mealId]) // User can only have one cart item per meal (can update quantity)
+}
+
+model CartItemOption {
+  id         Int   @id @default(autoincrement())
+  cartItemId Int
+  optionId   Int // references MealOption.id
+  quantity   Int   @default(1) // how many of this option selected
+  price      Float // price of the option at time of adding to cart
+
+  cartItem CartItem @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+
+  @@unique([cartItemId, optionId]) // Each option can only be selected once per cart item
 }

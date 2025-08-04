@@ -209,13 +209,22 @@ export const softDeleteUser = async (req, res) => {
 // Get all vendors (excluding soft-deleted)
 export const getAllVendors = async (req, res) => {
   try {
-    const vendors = await prisma.vendor.findMany();
+    const vendors = await prisma.vendor.findMany({
+      where: {
+        status: 'APPROVED', // fixed typo here
+      },
+    });
 
-    res.json(vendors);
+    if (vendors.length === 0) {
+      return res.status(200).json({ message: "No approved vendors found", data: [] });
+    }
+
+    res.status(200).json({ message: "Approved vendors fetched successfully", data: vendors });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch vendors" });
+    res.status(500).json({ error: "Failed to fetch vendors", details: error.message });
   }
 };
+
 
 export const getAllVendorsWithPendingStatus = async (req, res) => {
   try {

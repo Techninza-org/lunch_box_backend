@@ -238,11 +238,11 @@ model Meal {
   availableDays    MealAvailableDay[] // "MON", "TUE", etc
   cartItems        CartItem[] // cart items containing this meal
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  isDeleted Boolean   @default(false) // soft delete
-  isVerified Boolean @default(false) // for vendor verification
-  deletedAt DateTime? // soft delete timestamp
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  isDeleted  Boolean   @default(false) // soft delete
+  isVerified Boolean   @default(false) // for vendor verification
+  deletedAt  DateTime? // soft delete timestamp
 }
 
 model MealAvailableDay {

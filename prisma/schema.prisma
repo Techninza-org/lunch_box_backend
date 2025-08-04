@@ -22,6 +22,27 @@ model Admin {
   updatedAt DateTime @updatedAt
 }
 
+model DeliveryPartner {
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  phoneNumber    String   @unique
+  isActive       Boolean  @default(false)
+  isVerified     Boolean  @default(false)
+  profileImage   String?
+  identification String?
+  longitude      Float?
+  latitude       Float?
+  address        String?
+  city           String?
+  state          String?
+  zipCode        String?
+  phoneNumber2   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model User {
   id           Int           @id @default(autoincrement())
   name         String

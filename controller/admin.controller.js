@@ -337,15 +337,24 @@ export const updateVendorStatus = async (req, res) => {
 
 export const getAllDeliveryPartners = async (req, res) => {
   try {
-    const partners = await prisma.deliveryPartner.findMany();
+    const verifiedPartners = await prisma.deliveryPartner.findMany({
+      where: { isVerified: true },
+    });
 
-    if (partners.length === 0) {
-      return res.status(200).json({ message: "No delivery partners found", data: [] });
-    }
+    const unverifiedPartners = await prisma.deliveryPartner.findMany({
+      where: { isVerified: false },
+    });
 
-    res.status(200).json({ message: "Delivery partners fetched successfully", data: partners });
+    res.status(200).json({
+      message: "Delivery partners fetched successfully",
+      verified: verifiedPartners,
+      unverified: unverifiedPartners,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch delivery partners" });
+    res.status(500).json({
+      error: "Failed to fetch delivery partners",
+      details: error.message,
+    });
   }
 };
 

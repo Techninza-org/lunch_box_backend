@@ -489,3 +489,80 @@ export const getMealById = async (req, res) => {
     });
   }
 };
+
+// add address
+export const addAddress = async (req, res) => {
+  try {
+    const { address, city, state, zipCode, longitude, latitude, phoneNumber } =
+      req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
+    }
+
+    if (
+      !address ||
+      !city ||
+      !state ||
+      !zipCode ||
+      longitude == null ||
+      latitude == null ||
+      !phoneNumber
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Set all existing addresses' isDefault = false
+      await tx.userAddress.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+
+      // Create new address as default
+      const newAddress = await tx.userAddress.create({
+        data: {
+          userId,
+          address,
+          city,
+          state,
+          zipCode,
+          phoneNumber,
+          longitude,
+          latitude,
+          isDefault: true,
+        },
+      });
+
+      return newAddress;
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Address added successfully and set as default.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Add Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};

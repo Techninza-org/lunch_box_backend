@@ -8,9 +8,11 @@ import {
   getMealsByVendorAndType,
   searchMeals,
   getMealById,
+  addAddress,
 } from "../controller/user.controller.js";
 
 router.post("/add-current-location", addUserCurrentLocation);
+router.post("/add-address", addAddress);
 router.get("/home", getHomePage);
 // Get all restaurants by user location
 router.get(

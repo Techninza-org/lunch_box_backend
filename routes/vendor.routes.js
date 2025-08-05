@@ -9,9 +9,22 @@ import {
   updateStatusMealVendor,
   softDeleteMealVendor,
 } from "../controller/meal.controller.js";
+import {
+  getVendorMealSchedules,
+  bulkUpdateScheduleStatus,
+  getVendorScheduleStats,
+  assignDeliveryPartner,
+} from "../controller/order.controller.js";
+import {
+  getVendorOrders,
+  getVendorOrderById,
+  updateVendorOrderStatus,
+  getVendorDashboardStats,
+} from "../controller/vendor.order.controller.js";
+
 const upload = getMulterUpload("meals");
 
-// Define vendor routes here
+// Meal management routes
 router.post("/add-meal", upload.any(), addVendorMeal);
 router.get("/get-meals", getMealsByVendor);
 router.get("/get-meals/:id", getMealByIdVendor);
@@ -19,6 +32,21 @@ router.patch("/update-meal/:id", upload.any(), updateVendorMeal);
 router.put("/update-status/:id", updateStatusMealVendor);
 router.delete("/soft-delete/:id", softDeleteMealVendor);
 
-// Export the router
+// Order management routes
+router.get("/orders", getVendorOrders);
+router.get("/orders/:orderId", getVendorOrderById);
+router.patch("/orders/:orderId/status", updateVendorOrderStatus);
+
+// Schedule management routes
+router.get("/schedules", getVendorMealSchedules);
+router.patch("/schedules/bulk-update", bulkUpdateScheduleStatus);
+router.get("/schedule-stats", getVendorScheduleStats);
+router.patch(
+  "/schedules/:scheduleId/assign-delivery-partner",
+  assignDeliveryPartner
+);
+
+// Dashboard statistics
+router.get("/dashboard-stats", getVendorDashboardStats);
 
 export default router;

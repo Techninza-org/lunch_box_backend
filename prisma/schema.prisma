@@ -41,9 +41,12 @@ model DeliveryPartner {
   phoneNumber2   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  Order          Order[]
+
+  // Relations
+  Order        Order[]
   isDeleted      Boolean  @default(false)
   deletedAt      DateTime?
+  MealSchedule MealSchedule[]
 }
 
 model User {
@@ -152,6 +155,7 @@ model Vendor {
   VendorWalletTransaction VendorWalletTransaction[]
   Meal                    Meal[]
   Order                   Order[]
+  MealSchedule            MealSchedule[]
 }
 
 model VendorWallet {
@@ -165,13 +169,13 @@ model VendorWallet {
 }
 
 model Settings {
-  id                         Int   @id @default(autoincrement())
-  gst                        Float
-  vendorCommission           Float
-  deliveryPartnerCommission  Float
-  adminCommission            Float
-  deliveryChargePerKm        Float
-  platformCharge             Float
+  id                        Int   @id @default(autoincrement())
+  gst                       Float
+  vendorCommission          Float
+  deliveryPartnerCommission Float
+  adminCommission           Float
+  deliveryChargePerKm       Float
+  platformCharge            Float
 }
 
 enum WalletTransactionType {
@@ -491,6 +495,7 @@ model MealSchedule {
   id          Int  @id @default(autoincrement())
   orderId     Int
   orderItemId Int? // which specific meal from the order
+  vendorId    Int // direct vendor assignment for delivery operations
 
   // Schedule Details
   scheduledDate     DateTime // date when meal should be delivered
@@ -506,6 +511,9 @@ model MealSchedule {
   status             MealScheduleStatus @default(SCHEDULED)
   actualDeliveryTime DateTime?
 
+  // Delivery Partner Assignment
+  deliveryPartnerId Int?
+
   // Notes
   notes String?
 
@@ -513,8 +521,12 @@ model MealSchedule {
   updatedAt DateTime @updatedAt
 
   // Relations
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order           Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
 
   @@index([scheduledDate, status]) // for cron job queries
   @@index([orderId, scheduledDate]) // for user order tracking
+  @@index([vendorId, scheduledDate]) // for vendor schedule queries
+  @@index([deliveryPartnerId, scheduledDate]) // for delivery partner queries
 }

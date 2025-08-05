@@ -31,6 +31,13 @@ import {
   hardDeleteDeliveryPartner,
 
 } from "../controller/admin.controller.js";
+import {
+  getAllOrdersAdmin,
+  getOrderByIdAdmin,
+  updateOrderStatusAdmin,
+  assignDeliveryPartnerAdmin,
+  getAdminDashboardStats,
+} from "../controller/admin.order.controller.js";
 
 // Define admin routes here
 
@@ -78,5 +85,15 @@ router.delete("/hard-delete-delivery-partner/:id", hardDeleteDeliveryPartner);
 
 //----------Settings---------//
 router.post("/update-settings", upsertSettings);
+
+//----------Orders Management---------//
+router.get("/orders", getAllOrdersAdmin);
+router.get("/orders/:orderId", getOrderByIdAdmin);
+router.patch("/orders/:orderId/status", updateOrderStatusAdmin);
+router.patch(
+  "/orders/:orderId/assign-delivery-partner",
+  assignDeliveryPartnerAdmin
+);
+router.get("/dashboard-stats", getAdminDashboardStats);
 
 export default router;

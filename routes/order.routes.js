@@ -8,6 +8,7 @@ import {
   getTodayMealSchedules,
   updateMealScheduleStatus,
   getUserMealSchedules,
+  assignDeliveryPartner,
 } from "../controller/order.controller.js";
 
 const router = express.Router();
@@ -16,11 +17,15 @@ const router = express.Router();
 router.post("/", userAuth, createOrder);
 router.get("/", userAuth, getUserOrders);
 router.get("/schedules", userAuth, getUserMealSchedules);
-router.get("/schedules/today", getTodayMealSchedules); // For cron job - no auth needed
+router.get("/schedules/today", getTodayMealSchedules);
 router.get("/:orderId", userAuth, getOrderById);
 router.patch("/:orderId/cancel", userAuth, cancelOrder);
 
 // Schedule management routes
 router.patch("/schedules/:scheduleId/status", updateMealScheduleStatus);
+router.patch(
+  "/schedules/:scheduleId/assign-delivery-partner",
+  assignDeliveryPartner
+);
 
 export default router;

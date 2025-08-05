@@ -21,6 +21,7 @@ import {
   getDeliveryPartnerById,
   getUnverifiedDeliveryPartners,
   verifyDeliveryPartner,
+  unverifyDeliveryPartner,
   getMealsByVendorId,
   verifyMeal
 
@@ -64,5 +65,6 @@ router.get("/get-delivery-partner-by-id/:id", getDeliveryPartnerById);
 router.put("/update-delivery-partner/:id", updateDeliveryPartner);
 router.get("/get-unverified-partners", getUnverifiedDeliveryPartners);
 router.patch("/verify-delivery-partner/:id", verifyDeliveryPartner);
+router.patch("/unverify-delivery-partner/:id", unverifyDeliveryPartner);
 
 export default router;

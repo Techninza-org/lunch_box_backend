@@ -496,6 +496,42 @@ export const verifyDeliveryPartner = async (req, res) => {
   }
 };
 
+export const unverifyDeliveryPartner = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid delivery partner ID" });
+  }
+
+  try {
+    const existingPartner = await prisma.deliveryPartner.findUnique({
+      where: { id },
+    });
+
+    if (!existingPartner) {
+      return res.status(404).json({ error: "Delivery partner not found" });
+    }
+
+    const updatedPartner = await prisma.deliveryPartner.update({
+      where: { id },
+      data: {
+        isVerified: false,
+        isActive: false, // optional
+      },
+    });
+
+    res.status(200).json({
+      message: "Delivery partner unverified successfully",
+      data: updatedPartner,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to unverify delivery partner",
+      details: error.message,
+    });
+  }
+};
+
 export const getMealsByVendorId = async (req, res) => {
   const vendorId = parseInt(req.params.id);
 

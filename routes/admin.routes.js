@@ -23,7 +23,8 @@ import {
   verifyDeliveryPartner,
   unverifyDeliveryPartner,
   getMealsByVendorId,
-  verifyMeal
+  verifyMeal,
+  upsertSettings
 
 } from "../controller/admin.controller.js";
 
@@ -66,5 +67,8 @@ router.put("/update-delivery-partner/:id", updateDeliveryPartner);
 router.get("/get-unverified-partners", getUnverifiedDeliveryPartners);
 router.patch("/verify-delivery-partner/:id", verifyDeliveryPartner);
 router.patch("/unverify-delivery-partner/:id", unverifyDeliveryPartner);
+
+//----------Settings---------//
+router.post("/update-settings", upsertSettings);
 
 export default router;

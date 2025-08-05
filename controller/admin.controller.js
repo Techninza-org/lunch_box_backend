@@ -618,6 +618,58 @@ export const verifyMeal = async (req, res) => {
   }
 };
 
+//------------------SETTINGS----------------//
+
+// POST /settings - Create or Update Settings
+export const upsertSettings = async (req, res) => {
+  const {
+    gst,
+    vendorCommission,
+    deliveryPartnerCommission,
+    adminCommission,
+    deliveryChargePerKm,
+    platformCharge,
+  } = req.body;
+
+  try {
+    // Check if settings already exist
+    const existing = await prisma.settings.findFirst();
+
+    if (existing) {
+      // Update existing settings
+      const updated = await prisma.settings.update({
+        where: { id: existing.id },
+        data: {
+          gst,
+          vendorCommission,
+          deliveryPartnerCommission,
+          adminCommission,
+          deliveryChargePerKm,
+          platformCharge,
+        },
+      });
+      return res.json({ message: "Settings updated", data: updated });
+    } else {
+      // Create new settings
+      const created = await prisma.settings.create({
+        data: {
+          gst,
+          vendorCommission,
+          deliveryPartnerCommission,
+          adminCommission,
+          deliveryChargePerKm,
+          platformCharge,
+        },
+      });
+      return res.status(201).json({ message: "Settings created", data: created });
+    }
+  } catch (error) {
+    console.error("Error creating/updating settings:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
 
 
 

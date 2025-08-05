@@ -17,6 +17,7 @@ import publicRoutes from "./routes/public.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import vendorRoutes from "./routes/vendor.routes.js";
 import deliveryRoutes from "./routes/delivery.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 import path from "path";
 
 dotenv.config();
@@ -45,6 +46,7 @@ app.use("/api/users", userAuth, userRoutes); // user authenticated routes
 app.use("/api/admin", adminAuth, adminRoutes); // admin authenticated routes
 app.use("/api/vendor", vendorAuth, vendorRoutes); // vendor authenticated routes
 app.use("/api/delivery", deliveryAuth, deliveryRoutes); // delivery authenticated routes
+app.use("/api/orders", userAuth, orderRoutes); // order routes (user authenticated)
 
 // 404 Not Found Handler
 app.use((req, res, next) => {

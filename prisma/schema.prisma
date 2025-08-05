@@ -41,6 +41,7 @@ model DeliveryPartner {
   phoneNumber2   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  Order          Order[]
 }
 
 model User {
@@ -60,6 +61,7 @@ model User {
   updatedAt    DateTime      @updatedAt
   UserAddress  UserAddress[]
   CartItem     CartItem[]
+  Order        Order[]
 
   // UserCurrentLocation UserCurrentLocation[]
 }
@@ -145,6 +147,7 @@ model Vendor {
   VendorWallet            VendorWallet[]
   VendorWalletTransaction VendorWalletTransaction[]
   Meal                    Meal[]
+  Order                   Order[]
 }
 
 model VendorWallet {
@@ -237,6 +240,7 @@ model Meal {
   ingredients      MealIngredient[] // "Paneer", "Cumin", etc
   availableDays    MealAvailableDay[] // "MON", "TUE", etc
   cartItems        CartItem[] // cart items containing this meal
+  orderItems       OrderItem[] // order items containing this meal
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -345,4 +349,168 @@ model CartItemOption {
   cartItem CartItem @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
 
   @@unique([cartItemId, optionId]) // Each option can only be selected once per cart item
+}
+
+// ORDER SYSTEM MODELS
+enum OrderType {
+  ONETIME
+  WEEKLY
+  MONTHLY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentType {
+  CASH_ON_DELIVERY
+  RAZORPAY
+  UPI
+  CARD
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  vendorId  Int
+  orderType OrderType   @default(ONETIME)
+  status    OrderStatus @default(PENDING)
+
+  // Pricing
+  subtotal        Float // total of all items
+  deliveryCharges Float @default(0)
+  taxes           Float @default(0)
+  discount        Float @default(0)
+  totalAmount     Float // final amount after all calculations
+
+  // Payment
+  paymentType   PaymentType
+  paymentId     String? // external payment gateway ID
+  paymentStatus PaymentStatus @default(PENDING)
+
+  // Delivery Address (stored to preserve data)
+  deliveryAddress String
+  deliveryCity    String
+  deliveryState   String
+  deliveryZipCode String
+  deliveryPhone   String?
+  deliveryLat     Float?
+  deliveryLng     Float?
+
+  // Subscription Details
+  subscriptionStartDate    DateTime?
+  subscriptionEndDate      DateTime?
+  totalMealsInSubscription Int? // calculated based on orderType
+
+  // Delivery Partner Assignment
+  deliveryPartnerId Int?
+
+  // Notes
+  orderNotes   String?
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user            User             @relation(fields: [userId], references: [id])
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id])
+  orderItems      OrderItem[]
+  mealSchedules   MealSchedule[]
+}
+
+model OrderItem {
+  id      Int @id @default(autoincrement())
+  orderId Int
+
+  // Meal Details (preserved even if meal is deleted)
+  mealId          Int? // can be null if meal is deleted
+  mealTitle       String // preserved meal title
+  mealDescription String? // preserved meal description
+  mealImage       String? // preserved meal image
+  mealType        String // preserved meal type (Lunch, Dinner, etc.)
+  mealCuisine     String // preserved cuisine type
+  isVeg           Boolean // preserved veg status
+
+  quantity   Int
+  unitPrice  Float // price per unit at time of order
+  totalPrice Float // unitPrice * quantity + options
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  meal            Meal?             @relation(fields: [mealId], references: [id])
+  selectedOptions OrderItemOption[]
+}
+
+model OrderItemOption {
+  id          Int @id @default(autoincrement())
+  orderItemId Int
+
+  // Option Details (preserved even if option is deleted)
+  optionId   Int? // can be null if option is deleted
+  optionName String // preserved option name
+  quantity   Int
+  unitPrice  Float // price per option at time of order
+  totalPrice Float // unitPrice * quantity
+
+  // Relations
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+}
+
+enum MealScheduleStatus {
+  SCHEDULED
+  PREPARED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  MISSED
+}
+
+model MealSchedule {
+  id          Int  @id @default(autoincrement())
+  orderId     Int
+  orderItemId Int? // which specific meal from the order
+
+  // Schedule Details
+  scheduledDate     DateTime // date when meal should be delivered
+  scheduledTimeSlot String // e.g., "12:00-14:00" for lunch
+  mealType          String // Breakfast, Lunch, Dinner, Evening
+
+  // Meal Details (preserved)
+  mealTitle String
+  mealImage String?
+  quantity  Int
+
+  // Status
+  status             MealScheduleStatus @default(SCHEDULED)
+  actualDeliveryTime DateTime?
+
+  // Notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledDate, status]) // for cron job queries
+  @@index([orderId, scheduledDate]) // for user order tracking
 }

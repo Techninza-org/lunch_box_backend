@@ -485,6 +485,43 @@ export const hardDeleteVendor = async (req, res) => {
   }
 };
 
+// GET /meals/all
+export const getAllMeals = async (req, res) => {
+  try {
+    const allMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "All meals fetched successfully",
+      meals: allMeals,
+    });
+  } catch (error) {
+    console.error("Error fetching all meals:", error);
+    res.status(500).json({ error: "Failed to fetch meals", details: error.message });
+  }
+};
+
+
+
 
 
 //------------------DELIVERY_PARTNER_CRUD----------------//

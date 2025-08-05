@@ -10,7 +10,7 @@ import {
   getAllUsers,
   getUserById,
   deleteUser,
-  softDeleteUser,
+  toggleSoftDeleteUser,
   getAllVendors,
   getAllVendorsWithPendingStatus,
   getVendorById,
@@ -64,7 +64,7 @@ router.delete("/banners/:id", deleteBanner); // Delete banner
 router.get("/get-all-users", getAllUsers);
 router.get("/get-user-by-id/:id", getUserById);
 router.delete("/delete-user/:id", deleteUser);
-router.delete("/soft-delete-user/:id", softDeleteUser);
+router.patch("/soft-delete-user/:id", toggleSoftDeleteUser);
 
 //----------Vendor---------//
 router.get("/get-all-vendors", getAllVendors);

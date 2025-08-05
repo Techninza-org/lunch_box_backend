@@ -175,7 +175,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-export const softDeleteUser = async (req, res) => {
+export const toggleSoftDeleteUser = async (req, res) => {
   const id = parseInt(req.params.id);
 
   if (isNaN(id)) {
@@ -185,24 +185,29 @@ export const softDeleteUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id } });
 
-    if (!user || user.isDeleted) {
-      return res.status(404).json({ error: "User not found or already deleted" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        isDeleted: true,
-        isActive: false,
-        deletedAt: new Date(),
+        isDeleted: !user.isDeleted,
+        isActive: user.isDeleted, // reactivate if undeleting
+        deletedAt: user.isDeleted ? null : new Date(),
       },
     });
 
-    res.json({ message: "User soft deleted successfully" });
+    res.status(200).json({
+      message: `User has been ${updatedUser.isDeleted ? "soft deleted" : "restored"}`,
+      data: updatedUser,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete user" });
+    console.error("Toggle soft delete user error:", error);
+    res.status(500).json({ error: "Failed to toggle user deletion", details: error.message });
   }
 };
+
 
 //------------------Vendor_CRUD----------------//
 

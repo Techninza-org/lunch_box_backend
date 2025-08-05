@@ -387,7 +387,7 @@ export const getMealsByVendorId = async (req, res) => {
   }
 };
 
-export const verifyMeal = async (req, res) => {
+export const toggleVerifyMeal = async (req, res) => {
   const mealId = parseInt(req.params.id);
 
   if (isNaN(mealId)) {
@@ -406,18 +406,20 @@ export const verifyMeal = async (req, res) => {
     const updatedMeal = await prisma.meal.update({
       where: { id: mealId },
       data: {
-        isVerified: true,
+        isVerified: !existingMeal.isVerified,
       },
     });
 
     res.status(200).json({
-      message: "Meal verified successfully",
+      message: `Meal verification status set to ${updatedMeal.isVerified}`,
       data: updatedMeal,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to verify meal", details: error.message });
+    console.error("Error toggling meal verification:", error);
+    res.status(500).json({ error: "Failed to toggle meal verification", details: error.message });
   }
 };
+
 
 // PATCH /vendor/:id/toggle-delete
 export const toggleSoftDeleteVendor = async (req, res) => {

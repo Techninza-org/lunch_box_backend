@@ -23,7 +23,7 @@ import {
   verifyDeliveryPartner,
   unverifyDeliveryPartner,
   getMealsByVendorId,
-  verifyMeal,
+  toggleVerifyMeal,
   upsertSettings,
   toggleSoftDeleteVendor,
   hardDeleteVendor,
@@ -70,7 +70,7 @@ router.get("/get-vendor-by-id/:id", getVendorById);
 router.put("/update-vendor/:id", updateVendor);
 router.patch("/update-vendor-status/:id", updateVendorStatus);
 router.get("/get-vendor-meals/:id", getMealsByVendorId);
-router.patch("/verify-vendor-meal/:id", verifyMeal);
+router.patch("/verify-vendor-meal/:id", toggleVerifyMeal);
 router.patch("/soft-delete-vendor/:id", toggleSoftDeleteVendor);
 router.delete("/hard-delete-vendor/:id", hardDeleteVendor);
 router.get("/get-all-meals", getAllMeals);

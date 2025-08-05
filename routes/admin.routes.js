@@ -22,9 +22,15 @@ import {
   getUnverifiedDeliveryPartners,
   verifyDeliveryPartner,
   getMealsByVendorId,
-  verifyMeal
-
+  verifyMeal,
 } from "../controller/admin.controller.js";
+import {
+  getAllOrdersAdmin,
+  getOrderByIdAdmin,
+  updateOrderStatusAdmin,
+  assignDeliveryPartnerAdmin,
+  getAdminDashboardStats,
+} from "../controller/admin.order.controller.js";
 
 // Define admin routes here
 
@@ -64,5 +70,15 @@ router.get("/get-delivery-partner-by-id/:id", getDeliveryPartnerById);
 router.put("/update-delivery-partner/:id", updateDeliveryPartner);
 router.get("/get-unverified-partners", getUnverifiedDeliveryPartners);
 router.patch("/verify-delivery-partner/:id", verifyDeliveryPartner);
+
+//----------Orders Management---------//
+router.get("/orders", getAllOrdersAdmin);
+router.get("/orders/:orderId", getOrderByIdAdmin);
+router.patch("/orders/:orderId/status", updateOrderStatusAdmin);
+router.patch(
+  "/orders/:orderId/assign-delivery-partner",
+  assignDeliveryPartnerAdmin
+);
+router.get("/dashboard-stats", getAdminDashboardStats);
 
 export default router;

@@ -247,6 +247,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
     schedules.push({
       orderId: order.id,
       orderItemId: orderItem.id,
+      vendorId: order.vendorId, // Add vendor ID for delivery operations
       scheduledDate: deliveryDate,
       scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
       mealType: orderItem.mealType,
@@ -264,6 +265,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
         schedules.push({
           orderId: order.id,
           orderItemId: orderItem.id,
+          vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
           scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
           mealType: orderItem.mealType,
@@ -283,6 +285,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
         schedules.push({
           orderId: order.id,
           orderItemId: orderItem.id,
+          vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
           scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
           mealType: orderItem.mealType,
@@ -554,14 +557,23 @@ export const getTodayMealSchedules = async (req, res) => {
                 phoneNumber: true,
               },
             },
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-                businessName: true,
-                phoneNumber: true,
-              },
-            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            phoneNumber: true,
+            address: true,
+            city: true,
+          },
+        },
+        deliveryPartner: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
           },
         },
       },
@@ -674,14 +686,23 @@ export const getUserMealSchedules = async (req, res) => {
           select: {
             id: true,
             orderType: true,
-            vendor: {
-              select: {
-                id: true,
-                name: true,
-                businessName: true,
-                logo: true,
-              },
-            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            logo: true,
+            phoneNumber: true,
+            address: true,
+          },
+        },
+        deliveryPartner: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
           },
         },
       },
@@ -694,6 +715,353 @@ export const getUserMealSchedules = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching user schedules:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Get vendor's meal schedules for delivery operations
+ * @route GET /vendor/schedules
+ * @access Vendor
+ */
+export const getVendorMealSchedules = async (req, res) => {
+  try {
+    const vendorId = req.user.id; // Assuming vendor auth middleware sets this
+    const { startDate, endDate, status, mealType } = req.query;
+
+    const whereClause = {
+      vendorId: vendorId,
+    };
+
+    if (startDate && endDate) {
+      whereClause.scheduledDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    if (status) whereClause.status = status;
+    if (mealType) whereClause.mealType = mealType;
+
+    const schedules = await prisma.mealSchedule.findMany({
+      where: whereClause,
+      include: {
+        order: {
+          select: {
+            id: true,
+            orderType: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryPhone: true,
+            deliveryLat: true,
+            deliveryLng: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        },
+        deliveryPartner: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+      },
+      orderBy: [{ scheduledDate: "asc" }, { scheduledTimeSlot: "asc" }],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: schedules,
+    });
+  } catch (error) {
+    console.error("Error fetching vendor schedules:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Assign delivery partner to meal schedule
+ * @route PATCH /schedules/:scheduleId/assign-delivery-partner
+ * @access Vendor/Admin
+ */
+export const assignDeliveryPartner = async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+    const { deliveryPartnerId } = req.body;
+
+    if (!deliveryPartnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery partner ID is required",
+      });
+    }
+
+    // Verify delivery partner exists and is active
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { id: Number(deliveryPartnerId) },
+    });
+
+    if (!deliveryPartner || !deliveryPartner.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or inactive delivery partner",
+      });
+    }
+
+    const schedule = await prisma.mealSchedule.update({
+      where: { id: Number(scheduleId) },
+      data: {
+        deliveryPartnerId: Number(deliveryPartnerId),
+        status: "PREPARED", // Update status when delivery partner is assigned
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                name: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        },
+        vendor: {
+          select: {
+            name: true,
+            businessName: true,
+          },
+        },
+        deliveryPartner: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Delivery partner assigned successfully",
+      data: schedule,
+    });
+  } catch (error) {
+    console.error("Error assigning delivery partner:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Get delivery partner's assigned meal schedules
+ * @route GET /delivery-partner/schedules
+ * @access DeliveryPartner
+ */
+export const getDeliveryPartnerSchedules = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.deliveryPartner.id; // Assuming delivery partner auth middleware sets this
+    const { startDate, endDate, status } = req.query;
+
+    const whereClause = {
+      deliveryPartnerId: deliveryPartnerId,
+    };
+
+    if (startDate && endDate) {
+      whereClause.scheduledDate = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    if (status) whereClause.status = status;
+
+    const schedules = await prisma.mealSchedule.findMany({
+      where: whereClause,
+      include: {
+        order: {
+          select: {
+            id: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryPhone: true,
+            deliveryLat: true,
+            deliveryLng: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+              },
+            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            phoneNumber: true,
+            address: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+      orderBy: [{ scheduledDate: "asc" }, { scheduledTimeSlot: "asc" }],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: schedules,
+    });
+  } catch (error) {
+    console.error("Error fetching delivery partner schedules:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Bulk update meal schedule statuses for vendor operations
+ * @route PATCH /vendor/schedules/bulk-update
+ * @access Vendor
+ */
+export const bulkUpdateScheduleStatus = async (req, res) => {
+  try {
+    const { scheduleIds, status, notes } = req.body;
+
+    if (
+      !scheduleIds ||
+      !Array.isArray(scheduleIds) ||
+      scheduleIds.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Schedule IDs array is required",
+      });
+    }
+
+    const validStatuses = [
+      "SCHEDULED",
+      "PREPARED",
+      "OUT_FOR_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+      "MISSED",
+    ];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    const updateData = { status };
+    if (notes) updateData.notes = notes;
+    if (status === "DELIVERED") {
+      updateData.actualDeliveryTime = new Date();
+    }
+
+    const updatedSchedules = await prisma.mealSchedule.updateMany({
+      where: {
+        id: { in: scheduleIds.map((id) => Number(id)) },
+      },
+      data: updateData,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `${updatedSchedules.count} schedules updated successfully`,
+      data: { updatedCount: updatedSchedules.count },
+    });
+  } catch (error) {
+    console.error("Error bulk updating schedules:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+/**
+ * Get meal schedule statistics for vendor dashboard
+ * @route GET /vendor/schedule-stats
+ * @access Vendor
+ */
+export const getVendorScheduleStats = async (req, res) => {
+  try {
+    const vendorId = req.vendor.id;
+    const { date } = req.query;
+
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const stats = await prisma.mealSchedule.groupBy({
+      by: ["status"],
+      where: {
+        vendorId: vendorId,
+        scheduledDate: {
+          gte: targetDate,
+          lt: nextDay,
+        },
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    const totalSchedules = await prisma.mealSchedule.count({
+      where: {
+        vendorId: vendorId,
+        scheduledDate: {
+          gte: targetDate,
+          lt: nextDay,
+        },
+      },
+    });
+
+    // Transform stats into a more usable format
+    const statusStats = stats.reduce((acc, stat) => {
+      acc[stat.status] = stat._count.id;
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      success: true,
+      data: {
+        date: targetDate.toISOString().split("T")[0],
+        totalSchedules,
+        statusBreakdown: statusStats,
+        completionRate:
+          totalSchedules > 0
+            ? (((statusStats.DELIVERED || 0) / totalSchedules) * 100).toFixed(2)
+            : 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching vendor schedule stats:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

@@ -564,6 +564,105 @@ export const getMealById = async (req, res) => {
   }
 };
 
+export const getAllMealsGroupedByVerification = async (req, res) => {
+  try {
+    const verifiedMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+        isVerified: true,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    const unverifiedMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+        isVerified: false,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "All meals fetched successfully",
+      verified: verifiedMeals,
+      unverified: unverifiedMeals,
+    });
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+    res.status(500).json({
+      error: "Failed to fetch meals",
+      details: error.message,
+    });
+  }
+};
+
+export const toggleMealAvailability = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const existingMeal = await prisma.meal.findUnique({
+      where: { id: mealId },
+    });
+
+    if (!existingMeal) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    const updatedMeal = await prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        isAvailable: !existingMeal.isAvailable,
+      },
+    });
+
+    res.status(200).json({
+      message: `Meal availability toggled to ${updatedMeal.isAvailable}`,
+      data: updatedMeal,
+    });
+  } catch (error) {
+    console.error("Error toggling meal availability:", error);
+    res.status(500).json({
+      error: "Failed to toggle availability",
+      details: error.message,
+    });
+  }
+};
+
+
 
 
 

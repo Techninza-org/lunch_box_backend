@@ -24,7 +24,11 @@ import {
   unverifyDeliveryPartner,
   getMealsByVendorId,
   verifyMeal,
-  upsertSettings
+  upsertSettings,
+  toggleSoftDeleteVendor,
+  hardDeleteVendor,
+  toggleSoftDeleteDeliveryPartner,
+  hardDeleteDeliveryPartner,
 
 } from "../controller/admin.controller.js";
 
@@ -59,6 +63,8 @@ router.put("/update-vendor/:id", updateVendor);
 router.patch("/update-vendor-status/:id", updateVendorStatus);
 router.get("/get-vendor-meals/:id", getMealsByVendorId);
 router.patch("/verify-vendor-meal/:id", verifyMeal);
+router.patch("/soft-delete-vendor/:id", toggleSoftDeleteVendor);
+router.delete("/hard-delete-vendor/:id", hardDeleteVendor);
 
 //----------Delivery_Partner---------//
 router.get("/get-all-delivery-partners", getAllDeliveryPartners);
@@ -67,6 +73,8 @@ router.put("/update-delivery-partner/:id", updateDeliveryPartner);
 router.get("/get-unverified-partners", getUnverifiedDeliveryPartners);
 router.patch("/verify-delivery-partner/:id", verifyDeliveryPartner);
 router.patch("/unverify-delivery-partner/:id", unverifyDeliveryPartner);
+router.patch("/soft-delete-delivery-partner/:id", toggleSoftDeleteDeliveryPartner);
+router.delete("/hard-delete-delivery-partner/:id", hardDeleteDeliveryPartner);
 
 //----------Settings---------//
 router.post("/update-settings", upsertSettings);

@@ -522,6 +522,49 @@ export const getAllMeals = async (req, res) => {
   }
 };
 
+export const getMealById = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const meal = await prisma.meal.findUnique({
+      where: { id: mealId },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    if (!meal || meal.isDeleted) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    res.status(200).json({
+      message: "Meal fetched successfully",
+      data: meal,
+    });
+  } catch (error) {
+    console.error("Error fetching meal by ID:", error);
+    res.status(500).json({ error: "Failed to fetch meal", details: error.message });
+  }
+};
+
+
 
 
 

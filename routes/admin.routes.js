@@ -29,7 +29,8 @@ import {
   hardDeleteVendor,
   toggleSoftDeleteDeliveryPartner,
   hardDeleteDeliveryPartner,
-  getAllMeals
+  getAllMeals,
+  getMealById
 
 } from "../controller/admin.controller.js";
 import {
@@ -74,6 +75,7 @@ router.patch("/verify-vendor-meal/:id", toggleVerifyMeal);
 router.patch("/soft-delete-vendor/:id", toggleSoftDeleteVendor);
 router.delete("/hard-delete-vendor/:id", hardDeleteVendor);
 router.get("/get-all-meals", getAllMeals);
+router.get("/get-meal-by-id/:id", getMealById);
 
 
 //----------Delivery_Partner---------//

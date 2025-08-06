@@ -567,3 +567,30 @@ export const addAddress = async (req, res) => {
     });
   }
 };
+
+export const getUserNotifications = async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId || isNaN(userId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid user ID" });
+  }
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          { role: "USER" },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({ notifications });
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

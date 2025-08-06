@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+import { saveNotification } from "../utils/saveNotification.js";
+
 export const updateVendorProfile = async (req, res) => {
   const id = req.user?.id;
   if (isNaN(id)) return res.status(400).json({ message: "Invalid vendor ID" });
@@ -79,6 +81,14 @@ export const updateVendorProfile = async (req, res) => {
         isActive: true,
         updatedAt: true,
       },
+    });
+
+    // ✅ Save notification
+    await saveNotification({
+      title: "Profile Updated",
+      message: "Your vendor profile was successfully updated.",
+      userId: id,
+      role: "VENDOR",
     });
 
     res.status(200).json({
@@ -288,6 +298,33 @@ export const getVendorProfile = async (req, res) => {
     return res.status(200).json({ vendor });
   } catch (error) {
     console.error("Error fetching vendor profile:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getVendorNotifications = async (req, res) => {
+  const vendorId = req.user?.id;
+
+  if (!vendorId || isNaN(vendorId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid vendor ID" });
+  }
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: {
+        OR: [
+          { userId: vendorId },
+          { role: "VENDOR" },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({ notifications });
+  } catch (error) {
+    console.error("Error fetching vendor notifications:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

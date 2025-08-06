@@ -989,6 +989,63 @@ export const upsertSettings = async (req, res) => {
   }
 };
 
+export const getAllNotifications = async (req, res) => {
+  const { role, userId } = req.query;
+
+  const filters = [];
+
+  if (userId) {
+    filters.push({ userId: parseInt(userId) });
+  }
+
+  if (role) {
+    filters.push({ role: role.toUpperCase() });
+  }
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: filters.length ? { OR: filters } : {},
+      orderBy: { createdAt: "desc" },
+    });
+
+    const enriched = await Promise.all(
+      notifications.map(async (notif) => {
+        let name = null;
+
+        if (notif.userId) {
+          switch (notif.role) {
+            case "USER":
+              const user = await prisma.user.findUnique({ where: { id: notif.userId } });
+              name = user?.name || null;
+              break;
+            case "VENDOR":
+              const vendor = await prisma.vendor.findUnique({ where: { id: notif.userId } });
+              name = vendor?.name || null;
+              break;
+            case "DELIVERY_PARTNER":
+              const dp = await prisma.deliveryPartner.findUnique({ where: { id: notif.userId } });
+              name = dp?.name || null;
+              break;
+            default:
+              name = null;
+          }
+        }
+
+        return {
+          ...notif,
+          name,
+        };
+      })
+    );
+
+    return res.status(200).json({ notifications: enriched });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
 
 
 

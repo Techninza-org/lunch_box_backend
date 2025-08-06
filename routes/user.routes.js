@@ -9,6 +9,7 @@ import {
   searchMeals,
   getMealById,
   addAddress,
+  getUserNotifications
 } from "../controller/user.controller.js";
 
 import {
@@ -49,5 +50,9 @@ router.delete("/cart/clear", clearCart);
 router.patch("/cart/:cartItemId", updateCartItem);
 // Remove specific item from cart
 router.delete("/cart/:cartItemId", removeFromCart);
+// Get user notifications
+router.get("/get-user-notifications", getUserNotifications);
+
+
 
 export default router;

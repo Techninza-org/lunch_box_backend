@@ -20,6 +20,7 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
 }
 
 model DeliveryPartner {
@@ -67,6 +68,7 @@ model User {
   UserAddress  UserAddress[]
   CartItem     CartItem[]
   Order        Order[]
+  // notifications Notification[]
 
   // UserCurrentLocation UserCurrentLocation[]
 }
@@ -111,6 +113,32 @@ enum VendorStatus {
   APPROVED
   REJECTED
 }
+
+enum Role {
+  ADMIN
+  USER
+  VENDOR
+  DELIVERY_PARTNER
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Target
+  userId Int?
+
+  role   Role?    // if targeting a role (optional)
+
+  // Add this if you want updatedAt tracking
+  updatedAt DateTime @updatedAt
+}
+
+
 
 model Vendor {
   id           Int     @id @default(autoincrement())

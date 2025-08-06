@@ -5,7 +5,9 @@ import {
   updateScheduleStatusDeliveryPartner,
   getTodaySchedulesDeliveryPartner,
   getDeliveryPartnerDashboardStats,
+  
 } from "../controller/delivery.order.controller.js";
+import { getDeliveryNotifications } from "../controller/delivery.controller.js";
 
 const router = Router();
 
@@ -25,5 +27,7 @@ router.get("/dashboard-stats", getDeliveryPartnerDashboardStats);
 router.get("/", (req, res) => {
   res.json({ message: "Delivery list" });
 });
+
+router.get("/get-delivery-notifications", getDeliveryNotifications);
 
 export default router;

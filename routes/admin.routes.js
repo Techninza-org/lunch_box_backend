@@ -33,6 +33,7 @@ import {
   getMealById,
   getAllMealsGroupedByVerification,
   toggleMealAvailability,
+  getAllNotifications
 
 } from "../controller/admin.controller.js";
 import {
@@ -95,6 +96,7 @@ router.delete("/hard-delete-delivery-partner/:id", hardDeleteDeliveryPartner);
 
 //----------Settings---------//
 router.post("/update-settings", upsertSettings);
+router.get("/get-all-notifications", getAllNotifications);
 
 //----------Orders Management---------//
 router.get("/orders", getAllOrdersAdmin);

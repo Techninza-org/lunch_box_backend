@@ -259,3 +259,35 @@ export const toggleVendorActive = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getVendorProfile = async (req, res) => {
+  const vendorId = req.user?.id;
+
+  if (!vendorId || isNaN(vendorId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid vendor ID" });
+  }
+
+  try {
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: {
+        VendorBankDetail: true,
+        // You can also include:
+        // VendorWallet: true,
+        // VendorWalletTransaction: true,
+        // Meal: true,
+        // Order: true,
+        // MealSchedule: true,
+      },
+    });
+
+    if (!vendor || vendor.isDeleted) {
+      return res.status(404).json({ message: "Vendor not found or deleted" });
+    }
+
+    return res.status(200).json({ vendor });
+  } catch (error) {
+    console.error("Error fetching vendor profile:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

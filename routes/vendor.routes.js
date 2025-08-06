@@ -25,7 +25,8 @@ import {
   updateVendorProfile,
   updateVendorMealTimes,
   addOrUpdateVendorBankDetail,
-  toggleVendorActive
+  toggleVendorActive,
+  getVendorProfile
 } from "../controller/vendor.controller.js";
 
 const upload = getMulterUpload("meals");
@@ -58,6 +59,7 @@ router.put("/update-vendor-profile", logoUpload.single("logo"), updateVendorProf
 router.put("/update-vendor-meal-times", updateVendorMealTimes);
 router.post("/update-vendor-bank-details", addOrUpdateVendorBankDetail);
 router.patch("/toggle-vendor-active", toggleVendorActive);
+router.get("/get-vendor-details", getVendorProfile);
 
 
 // Dashboard statistics

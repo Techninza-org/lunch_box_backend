@@ -63,6 +63,7 @@ model User {
   profileImage String? // URL of the user's profile image
   longitude    Float?
   latitude     Float?
+  gender       String? // e.g.,
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   UserAddress  UserAddress[]

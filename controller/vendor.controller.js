@@ -9,8 +9,7 @@ export const updateVendorProfile = async (req, res) => {
 
   const {
     name,
-    email,
-    // password,
+    // email, <- removed from destructuring
     phoneNumber,
     businessName,
     description,
@@ -31,16 +30,8 @@ export const updateVendorProfile = async (req, res) => {
       return res.status(404).json({ message: "Vendor not found or deleted" });
     }
 
-    // Check if email or phoneNumber are already in use (by someone else)
-    if (email && email !== existingVendor.email) {
-      const emailExists = await prisma.vendor.findFirst({
-        where: { email, NOT: { id } },
-      });
-      if (emailExists) {
-        return res.status(409).json({ message: "Email already in use" });
-      }
-    }
-
+    // ✅ Do not allow email update
+    // ✅ Only check phone number duplication
     if (phoneNumber && phoneNumber !== existingVendor.phoneNumber) {
       const phoneExists = await prisma.vendor.findFirst({
         where: { phoneNumber, NOT: { id } },
@@ -50,17 +41,10 @@ export const updateVendorProfile = async (req, res) => {
       }
     }
 
-    // let hashedPassword = undefined;
-    // if (password) {
-    //   hashedPassword = await bcrypt.hash(password, 12);
-    // }
-
     const updatedVendor = await prisma.vendor.update({
       where: { id },
       data: {
         name,
-        email,
-        // password: hashedPassword,
         phoneNumber,
         phoneNumber2,
         businessName,
@@ -68,14 +52,12 @@ export const updateVendorProfile = async (req, res) => {
         address,
         city,
         state,
-        // longitude: longitude ? parseFloat(longitude) : undefined,
-        // latitude: latitude ? parseFloat(latitude) : undefined,
         logo: logo ? `uploads/vendors/${logo}` : undefined,
       },
       select: {
         id: true,
         name: true,
-        email: true,
+        email: true, // still returned but not updated
         businessName: true,
         status: true,
         isActive: true,

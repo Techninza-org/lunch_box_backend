@@ -54,8 +54,8 @@ router.patch(
 );
 
 // Vendor profile management
-router.put("/update-vendor-profile/:id", logoUpload.single("logo"), updateVendorProfile);
-router.put("/update-vendor-meal-times/:id", updateVendorMealTimes);
+router.put("/update-vendor-profile", logoUpload.single("logo"), updateVendorProfile);
+router.put("/update-vendor-meal-times", updateVendorMealTimes);
 router.post("/update-vendor-bank-details", addOrUpdateVendorBankDetail);
 router.patch("/toggle-vendor-active", toggleVendorActive);
 

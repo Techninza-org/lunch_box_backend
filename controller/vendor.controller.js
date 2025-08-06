@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const updateVendorProfile = async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = req.user?.id;
   if (isNaN(id)) return res.status(400).json({ message: "Invalid vendor ID" });
 
   const {
@@ -92,7 +92,7 @@ export const updateVendorProfile = async (req, res) => {
 };
 
 export const updateVendorMealTimes = async (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = req.user?.id;
   if (isNaN(id)) return res.status(400).json({ message: "Invalid vendor ID" });
 
   const {

@@ -27,7 +27,8 @@ import {
   addOrUpdateVendorBankDetail,
   toggleVendorActive,
   getVendorProfile,
-  getVendorNotifications
+  getVendorNotifications,
+  searchMeals
 } from "../controller/vendor.controller.js";
 
 const upload = getMulterUpload("meals");
@@ -40,6 +41,7 @@ router.get("/get-meals/:id", getMealByIdVendor);
 router.patch("/update-meal/:id", upload.any(), updateVendorMeal);
 router.put("/update-status/:id", updateStatusMealVendor);
 router.delete("/soft-delete/:id", softDeleteMealVendor);
+router.get("/search-meals", searchMeals);
 
 // Order management routes
 router.get("/orders", getVendorOrders);

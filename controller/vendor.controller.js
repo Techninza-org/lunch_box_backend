@@ -328,3 +328,43 @@ export const getVendorNotifications = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const searchMeals = async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || typeof query !== "string") {
+    return res.status(400).json({ message: "Query string is required" });
+  }
+
+  try {
+    // Fetch all meals (or limit if needed)
+    const meals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        title: true,
+        image: true,
+        description: true,
+        type: true,
+        isVeg: true,
+        basePrice: true,
+        isAvailable: true,
+      },
+      orderBy: {
+        title: "asc",
+      },
+    });
+
+    // Filter meals in JS (case-insensitive)
+    const filteredMeals = meals.filter((meal) =>
+      meal.title.toLowerCase().includes(query.toLowerCase())
+    );
+
+    res.status(200).json({ meals: filteredMeals });
+  } catch (error) {
+    console.error("Error searching meals:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

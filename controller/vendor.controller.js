@@ -222,3 +222,40 @@ export const addOrUpdateVendorBankDetail = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const toggleVendorActive = async (req, res) => {
+  const vendorId = req.user?.id;
+
+  if (!vendorId || isNaN(vendorId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid vendor ID" });
+  }
+
+  try {
+    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+
+    if (!vendor || vendor.isDeleted) {
+      return res.status(404).json({ message: "Vendor not found or deleted" });
+    }
+
+    const updatedVendor = await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        isActive: !vendor.isActive, // Toggle the boolean
+      },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    });
+
+    res.status(200).json({
+      message: `Vendor is now ${updatedVendor.isActive ? "active" : "inactive"}`,
+      vendor: updatedVendor,
+    });
+  } catch (err) {
+    console.error("Error toggling isActive:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

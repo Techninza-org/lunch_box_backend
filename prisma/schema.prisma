@@ -156,7 +156,24 @@ model Vendor {
   Meal                    Meal[]
   Order                   Order[]
   MealSchedule            MealSchedule[]
+  VendorBankDetail        VendorBankDetail? // Added relation to VendorBankDetail
 }
+
+model VendorBankDetail {
+  id            Int      @id @default(autoincrement())
+  vendorId      Int      @unique
+  accountHolder String
+  accountNumber String   @unique
+  ifscCode      String
+  bankName      String
+  // branchName    String?
+  // upiId         String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
 
 model VendorWallet {
   id        Int      @id @default(autoincrement())

@@ -21,8 +21,14 @@ import {
   updateVendorOrderStatus,
   getVendorDashboardStats,
 } from "../controller/vendor.order.controller.js";
+import {
+  updateVendorProfile,
+  updateVendorMealTimes,
+  addOrUpdateVendorBankDetail,
+} from "../controller/vendor.controller.js";
 
 const upload = getMulterUpload("meals");
+const logoUpload = getMulterUpload("vendors");
 
 // Meal management routes
 router.post("/add-meal", upload.any(), addVendorMeal);
@@ -45,6 +51,12 @@ router.patch(
   "/schedules/:scheduleId/assign-delivery-partner",
   assignDeliveryPartner
 );
+
+// Vendor profile management
+router.put("/update-vendor-profile/:id", logoUpload.single("logo"), updateVendorProfile);
+router.put("/update-vendor-meal-times/:id", updateVendorMealTimes);
+router.post("/update-vendor-bank-details", addOrUpdateVendorBankDetail);
+
 
 // Dashboard statistics
 router.get("/dashboard-stats", getVendorDashboardStats);

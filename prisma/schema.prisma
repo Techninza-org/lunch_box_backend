@@ -20,6 +20,7 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
 }
 
 model DeliveryPartner {
@@ -44,6 +45,8 @@ model DeliveryPartner {
 
   // Relations
   Order        Order[]
+  isDeleted      Boolean  @default(false)
+  deletedAt      DateTime?
   MealSchedule MealSchedule[]
 }
 
@@ -60,11 +63,13 @@ model User {
   profileImage String? // URL of the user's profile image
   longitude    Float?
   latitude     Float?
+  gender       String? // e.g.,
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   UserAddress  UserAddress[]
   CartItem     CartItem[]
   Order        Order[]
+  // notifications Notification[]
 
   // UserCurrentLocation UserCurrentLocation[]
 }
@@ -110,6 +115,32 @@ enum VendorStatus {
   REJECTED
 }
 
+enum Role {
+  ADMIN
+  USER
+  VENDOR
+  DELIVERY_PARTNER
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  // Target
+  userId Int?
+
+  role   Role?    // if targeting a role (optional)
+
+  // Add this if you want updatedAt tracking
+  updatedAt DateTime @updatedAt
+}
+
+
+
 model Vendor {
   id           Int     @id @default(autoincrement())
   name         String
@@ -142,6 +173,8 @@ model Vendor {
   // Status
   isActive Boolean      @default(false)
   status   VendorStatus @default(PENDING)
+  isDeleted Boolean      @default(false)
+  deletedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,7 +185,24 @@ model Vendor {
   Meal                    Meal[]
   Order                   Order[]
   MealSchedule            MealSchedule[]
+  VendorBankDetail        VendorBankDetail? // Added relation to VendorBankDetail
 }
+
+model VendorBankDetail {
+  id            Int      @id @default(autoincrement())
+  vendorId      Int      @unique
+  accountHolder String
+  accountNumber String   @unique
+  ifscCode      String
+  bankName      String
+  // branchName    String?
+  // upiId         String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
 
 model VendorWallet {
   id        Int      @id @default(autoincrement())

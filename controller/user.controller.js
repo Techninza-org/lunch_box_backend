@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+import { saveNotification } from "../utils/saveNotification.js";
+
 export const addUserCurrentLocation = async (req, res) => {
   try {
     const userId = req.user.id; // Assuming user ID is set in req.user by auth middleware
@@ -565,5 +567,107 @@ export const addAddress = async (req, res) => {
       message: "Something went wrong",
       error: error.message,
     });
+  }
+};
+
+export const getUserNotifications = async (req, res) => {
+  const userId = req.user?.id;
+
+  if (!userId || isNaN(userId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid user ID" });
+  }
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: {
+        OR: [
+          { userId: userId },
+          { role: "USER" },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({ notifications });
+  } catch (error) {
+    console.error("Error fetching user notifications:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateUserProfile = async (req, res) => {
+  const id = req.user?.id;
+  if (isNaN(id)) {
+    return res.status(400).json({ message: "Invalid user ID" });
+  }
+
+  const {
+    name,
+    // email,  <- users should not update email
+    phoneNumber,
+    gender,
+    // longitude,
+    // latitude,
+  } = req.body;
+
+  const profileImage = req.file ? req.file.filename : null;
+
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { id } });
+
+    if (!existingUser || existingUser.isDeleted) {
+      return res.status(404).json({ message: "User not found or deleted" });
+    }
+
+    // Check phone number uniqueness
+    if (phoneNumber && phoneNumber !== existingUser.phoneNumber) {
+      const phoneExists = await prisma.user.findFirst({
+        where: { phoneNumber, NOT: { id } },
+      });
+      if (phoneExists) {
+        return res.status(409).json({ message: "Phone number already in use" });
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name,
+        phoneNumber,
+        gender,
+        // longitude: longitude ? parseFloat(longitude) : undefined,
+        // latitude: latitude ? parseFloat(latitude) : undefined,
+        profileImage: profileImage ? `uploads/users/${profileImage}` : undefined,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true,
+        gender: true,
+        profileImage: true,
+        longitude: true,
+        latitude: true,
+        updatedAt: true,
+      },
+    });
+
+    // ✅ Save notification
+    await saveNotification({
+      title: "Profile Updated",
+      message: "Your user profile was successfully updated.",
+      userId: id,
+      role: "USER",
+    });
+
+    res.status(200).json({
+      message: "User profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -148,9 +148,20 @@ export const userRegister = async (req, res) => {
       },
     });
 
-    res
-      .status(201)
-      .json({ message: "User registered successfully", user: newUser });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: newUser.id, role: "USER" },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user: newUser,
+      token,
+    });
   } catch (error) {
     console.error("Error registering user:", error);
     res.status(500).json({ message: "Internal server error" });

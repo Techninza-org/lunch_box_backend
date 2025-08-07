@@ -1,5 +1,6 @@
 import { Router } from "express";
 const router = Router();
+import { getMulterUpload } from "../utils/multer.js";
 import {
   getHomePage,
   addUserCurrentLocation,
@@ -9,6 +10,8 @@ import {
   searchMeals,
   getMealById,
   addAddress,
+  getUserNotifications,
+  updateUserProfile,
 } from "../controller/user.controller.js";
 
 import {
@@ -19,6 +22,8 @@ import {
   clearCart,
   getCartSummary,
 } from "../controller/cart.controller.js";
+
+const logoUpload = getMulterUpload("users");
 
 router.post("/add-current-location", addUserCurrentLocation);
 router.post("/add-address", addAddress);
@@ -49,5 +54,10 @@ router.delete("/cart/clear", clearCart);
 router.patch("/cart/:cartItemId", updateCartItem);
 // Remove specific item from cart
 router.delete("/cart/:cartItemId", removeFromCart);
+// Get user notifications
+router.get("/get-user-notifications", getUserNotifications);
+// User profile management
+router.put("/update-profile", logoUpload.single("profileImage"), updateUserProfile);
+
 
 export default router;

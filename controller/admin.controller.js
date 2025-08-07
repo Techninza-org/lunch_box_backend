@@ -175,7 +175,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-export const softDeleteUser = async (req, res) => {
+export const toggleSoftDeleteUser = async (req, res) => {
   const id = parseInt(req.params.id);
 
   if (isNaN(id)) {
@@ -185,24 +185,29 @@ export const softDeleteUser = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id } });
 
-    if (!user || user.isDeleted) {
-      return res.status(404).json({ error: "User not found or already deleted" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        isDeleted: true,
-        isActive: false,
-        deletedAt: new Date(),
+        isDeleted: !user.isDeleted,
+        isActive: user.isDeleted, // reactivate if undeleting
+        deletedAt: user.isDeleted ? null : new Date(),
       },
     });
 
-    res.json({ message: "User soft deleted successfully" });
+    res.status(200).json({
+      message: `User has been ${updatedUser.isDeleted ? "soft deleted" : "restored"}`,
+      data: updatedUser,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete user" });
+    console.error("Toggle soft delete user error:", error);
+    res.status(500).json({ error: "Failed to toggle user deletion", details: error.message });
   }
 };
+
 
 //------------------Vendor_CRUD----------------//
 
@@ -332,6 +337,341 @@ export const updateVendorStatus = async (req, res) => {
     });
   }
 };
+
+export const getMealsByVendorId = async (req, res) => {
+  const vendorId = parseInt(req.params.id);
+
+  if (isNaN(vendorId)) {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    // Fetch verified meals
+    const verifiedMeals = await prisma.meal.findMany({
+      where: {
+        vendorId,
+        isDeleted: false,
+        isVerified: true,
+      },
+      include: {
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    // Fetch unverified meals
+    const unverifiedMeals = await prisma.meal.findMany({
+      where: {
+        vendorId,
+        isDeleted: false,
+        isVerified: false,
+      },
+      include: {
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "Meals fetched successfully",
+      verified: verifiedMeals,
+      unverified: unverifiedMeals,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch meals", details: error.message });
+  }
+};
+
+export const toggleVerifyMeal = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const existingMeal = await prisma.meal.findUnique({
+      where: { id: mealId },
+    });
+
+    if (!existingMeal) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    const updatedMeal = await prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        isVerified: !existingMeal.isVerified,
+      },
+    });
+
+    res.status(200).json({
+      message: `Meal verification status set to ${updatedMeal.isVerified}`,
+      data: updatedMeal,
+    });
+  } catch (error) {
+    console.error("Error toggling meal verification:", error);
+    res.status(500).json({ error: "Failed to toggle meal verification", details: error.message });
+  }
+};
+
+
+// PATCH /vendor/:id/toggle-delete
+export const toggleSoftDeleteVendor = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    const vendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!vendor) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    const toggledVendor = await prisma.vendor.update({
+      where: { id },
+      data: {
+        isDeleted: !vendor.isDeleted,
+        deletedAt: vendor.isDeleted ? null : new Date(),
+        isActive: vendor.isDeleted ? true : false, // Optional: re-activate if undeleting
+      },
+    });
+
+    res.status(200).json({
+      message: `Vendor has been ${toggledVendor.isDeleted ? "soft-deleted" : "restored"} successfully.`,
+      data: toggledVendor,
+    });
+  } catch (error) {
+    console.error("Toggle delete error:", error);
+    res.status(500).json({
+      error: "Failed to toggle soft delete",
+      details: error.message,
+    });
+  }
+};
+
+// DELETE /vendor/:id/hard-delete
+export const hardDeleteVendor = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    const existingVendor = await prisma.vendor.findUnique({ where: { id } });
+
+    if (!existingVendor) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    await prisma.vendor.delete({ where: { id } });
+
+    res.status(200).json({
+      message: "Vendor permanently deleted from the system.",
+    });
+  } catch (error) {
+    console.error("Error hard-deleting vendor:", error);
+    res.status(500).json({
+      error: "Failed to hard delete vendor",
+      details: error.message,
+    });
+  }
+};
+
+// GET /meals/all
+export const getAllMeals = async (req, res) => {
+  try {
+    const allMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "All meals fetched successfully",
+      meals: allMeals,
+    });
+  } catch (error) {
+    console.error("Error fetching all meals:", error);
+    res.status(500).json({ error: "Failed to fetch meals", details: error.message });
+  }
+};
+
+export const getMealById = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const meal = await prisma.meal.findUnique({
+      where: { id: mealId },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    if (!meal || meal.isDeleted) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    res.status(200).json({
+      message: "Meal fetched successfully",
+      data: meal,
+    });
+  } catch (error) {
+    console.error("Error fetching meal by ID:", error);
+    res.status(500).json({ error: "Failed to fetch meal", details: error.message });
+  }
+};
+
+export const getAllMealsGroupedByVerification = async (req, res) => {
+  try {
+    const verifiedMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+        isVerified: true,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    const unverifiedMeals = await prisma.meal.findMany({
+      where: {
+        isDeleted: false,
+        isVerified: false,
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: { options: true },
+        },
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "All meals fetched successfully",
+      verified: verifiedMeals,
+      unverified: unverifiedMeals,
+    });
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+    res.status(500).json({
+      error: "Failed to fetch meals",
+      details: error.message,
+    });
+  }
+};
+
+export const toggleMealAvailability = async (req, res) => {
+  const mealId = parseInt(req.params.id);
+
+  if (isNaN(mealId)) {
+    return res.status(400).json({ error: "Invalid meal ID" });
+  }
+
+  try {
+    const existingMeal = await prisma.meal.findUnique({
+      where: { id: mealId },
+    });
+
+    if (!existingMeal) {
+      return res.status(404).json({ error: "Meal not found" });
+    }
+
+    const updatedMeal = await prisma.meal.update({
+      where: { id: mealId },
+      data: {
+        isAvailable: !existingMeal.isAvailable,
+      },
+    });
+
+    res.status(200).json({
+      message: `Meal availability toggled to ${updatedMeal.isAvailable}`,
+      data: updatedMeal,
+    });
+  } catch (error) {
+    console.error("Error toggling meal availability:", error);
+    res.status(500).json({
+      error: "Failed to toggle availability",
+      details: error.message,
+    });
+  }
+};
+
+
+
+
+
+
 
 //------------------DELIVERY_PARTNER_CRUD----------------//
 
@@ -532,91 +872,71 @@ export const unverifyDeliveryPartner = async (req, res) => {
   }
 };
 
-export const getMealsByVendorId = async (req, res) => {
-  const vendorId = parseInt(req.params.id);
+export const toggleSoftDeleteDeliveryPartner = async (req, res) => {
+  const id = parseInt(req.params.id);
 
-  if (isNaN(vendorId)) {
-    return res.status(400).json({ error: "Invalid vendor ID" });
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid delivery partner ID" });
   }
 
   try {
-    // Fetch verified meals
-    const verifiedMeals = await prisma.meal.findMany({
-      where: {
-        vendorId,
-        isDeleted: false,
-        isVerified: true,
-      },
-      include: {
-        mealImages: true,
-        mealOptionGroups: {
-          include: { options: true },
-        },
-        dietaryTags: true,
-        ingredients: true,
-        availableDays: true,
-      },
-    });
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({ where: { id } });
 
-    // Fetch unverified meals
-    const unverifiedMeals = await prisma.meal.findMany({
-      where: {
-        vendorId,
-        isDeleted: false,
-        isVerified: false,
-      },
-      include: {
-        mealImages: true,
-        mealOptionGroups: {
-          include: { options: true },
-        },
-        dietaryTags: true,
-        ingredients: true,
-        availableDays: true,
-      },
-    });
-
-    res.status(200).json({
-      message: "Meals fetched successfully",
-      verified: verifiedMeals,
-      unverified: unverifiedMeals,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch meals", details: error.message });
-  }
-};
-
-export const verifyMeal = async (req, res) => {
-  const mealId = parseInt(req.params.id);
-
-  if (isNaN(mealId)) {
-    return res.status(400).json({ error: "Invalid meal ID" });
-  }
-
-  try {
-    const existingMeal = await prisma.meal.findUnique({
-      where: { id: mealId },
-    });
-
-    if (!existingMeal) {
-      return res.status(404).json({ error: "Meal not found" });
+    if (!deliveryPartner) {
+      return res.status(404).json({ error: "deliveryPartner not found" });
     }
 
-    const updatedMeal = await prisma.meal.update({
-      where: { id: mealId },
+    const toggledDeliveryPartner = await prisma.deliveryPartner.update({
+      where: { id },
       data: {
-        isVerified: true,
+        isDeleted: !deliveryPartner.isDeleted,
+        deletedAt: deliveryPartner.isDeleted ? null : new Date(),
+        isActive: deliveryPartner.isDeleted ? true : false, // Optional: re-activate if undeleting
       },
     });
 
     res.status(200).json({
-      message: "Meal verified successfully",
-      data: updatedMeal,
+      message: `Vendor has been ${toggledDeliveryPartner.isDeleted ? "soft-deleted" : "restored"} successfully.`,
+      data: toggledDeliveryPartner,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to verify meal", details: error.message });
+    console.error("Toggle delete error:", error);
+    res.status(500).json({
+      error: "Failed to toggle soft delete",
+      details: error.message,
+    });
   }
 };
+
+export const hardDeleteDeliveryPartner = async (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid DeliveryPartner ID" });
+  }
+
+  try {
+    const existingDeliveryPartner = await prisma.deliveryPartner.findUnique({ where: { id } });
+
+    if (!existingDeliveryPartner) {
+      return res.status(404).json({ error: "DeliveryPartner not found" });
+    }
+
+    await prisma.deliveryPartner.delete({ where: { id } });
+
+    res.status(200).json({
+      message: "DeliveryPartner permanently deleted from the system.",
+    });
+  } catch (error) {
+    console.error("Error hard-deleting vendor:", error);
+    res.status(500).json({
+      error: "Failed to hard delete vendor",
+      details: error.message,
+    });
+  }
+};
+
+
 
 //------------------SETTINGS----------------//
 
@@ -668,6 +988,63 @@ export const upsertSettings = async (req, res) => {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+export const getAllNotifications = async (req, res) => {
+  const { role, userId } = req.query;
+
+  const filters = [];
+
+  if (userId) {
+    filters.push({ userId: parseInt(userId) });
+  }
+
+  if (role) {
+    filters.push({ role: role.toUpperCase() });
+  }
+
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: filters.length ? { OR: filters } : {},
+      orderBy: { createdAt: "desc" },
+    });
+
+    const enriched = await Promise.all(
+      notifications.map(async (notif) => {
+        let name = null;
+
+        if (notif.userId) {
+          switch (notif.role) {
+            case "USER":
+              const user = await prisma.user.findUnique({ where: { id: notif.userId } });
+              name = user?.name || null;
+              break;
+            case "VENDOR":
+              const vendor = await prisma.vendor.findUnique({ where: { id: notif.userId } });
+              name = vendor?.name || null;
+              break;
+            case "DELIVERY_PARTNER":
+              const dp = await prisma.deliveryPartner.findUnique({ where: { id: notif.userId } });
+              name = dp?.name || null;
+              break;
+            default:
+              name = null;
+          }
+        }
+
+        return {
+          ...notif,
+          name,
+        };
+      })
+    );
+
+    return res.status(200).json({ notifications: enriched });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 
 

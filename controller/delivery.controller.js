@@ -28,3 +28,36 @@ export const getDeliveryNotifications = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getTodayMealSchedulesForDeliveryPartner = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+
+    if (!deliveryPartnerId) {
+      return res.status(401).json({ error: "Unauthorized: Missing delivery partner ID" });
+    }
+
+    // Get today's start and end timestamps (00:00 to 23:59)
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+    const mealSchedules = await prisma.mealSchedule.findMany({
+      where: {
+        deliveryPartnerId,
+        scheduledDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+      orderBy: {
+        scheduledDate: 'asc',
+      },
+    });
+
+    return res.status(200).json(mealSchedules);
+  } catch (error) {
+    console.error("Error fetching meal schedules:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

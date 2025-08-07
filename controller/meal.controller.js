@@ -401,7 +401,7 @@ export const updateVendorMeal = async (req, res) => {
 /**
  * Update the status of a meal (available/unavailable)
  */
-export const updateStatusMealVendor = async (req, res) => {
+export const  updateStatusMealVendor = async (req, res) => {
   const { id } = req.params;
 
   try {

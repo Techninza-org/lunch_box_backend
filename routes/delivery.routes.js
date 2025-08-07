@@ -5,9 +5,11 @@ import {
   updateScheduleStatusDeliveryPartner,
   getTodaySchedulesDeliveryPartner,
   getDeliveryPartnerDashboardStats,
-  
 } from "../controller/delivery.order.controller.js";
-import { getDeliveryNotifications } from "../controller/delivery.controller.js";
+import {
+  getDeliveryNotifications,
+  getTodayMealSchedulesForDeliveryPartner,
+} from "../controller/delivery.controller.js";
 
 const router = Router();
 
@@ -29,5 +31,6 @@ router.get("/", (req, res) => {
 });
 
 router.get("/get-delivery-notifications", getDeliveryNotifications);
+router.get("/get-scheduled-meals", getTodayMealSchedulesForDeliveryPartner);
 
 export default router;

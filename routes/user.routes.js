@@ -24,6 +24,8 @@ import {
   getCartSummary,
 } from "../controller/cart.controller.js";
 
+import { createRazorpayOrder } from "../controller/payment.controller.js";
+
 const logoUpload = getMulterUpload("users");
 
 router.post("/add-current-location", addUserCurrentLocation);
@@ -64,5 +66,8 @@ router.put(
   logoUpload.single("profileImage"),
   updateUserProfile
 );
+
+// payment routes
+router.post("/create-razorpay-order", createRazorpayOrder);
 
 export default router;

@@ -20,7 +20,6 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
 }
 
 model DeliveryPartner {
@@ -44,16 +43,16 @@ model DeliveryPartner {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  Order        Order[]
-  isDeleted      Boolean  @default(false)
-  deletedAt      DateTime?
-  MealSchedule MealSchedule[]
+  Order              Order[]
+  isDeleted          Boolean             @default(false)
+  deletedAt          DateTime?
+  MealSchedule       MealSchedule[]
   DeliveryBankDetail DeliveryBankDetail?
 }
 
 model DeliveryBankDetail {
   id            Int      @id @default(autoincrement())
-  deliveryId      Int      @unique
+  deliveryId    Int      @unique
   accountHolder String
   accountNumber String   @unique
   ifscCode      String
@@ -137,23 +136,21 @@ enum Role {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   title     String
   message   String
-  isRead    Boolean  @default(false)
+  isRead    Boolean   @default(false)
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   // Target
   userId Int?
 
-  role   Role?    // if targeting a role (optional)
+  role Role? // if targeting a role (optional)
 
   // Add this if you want updatedAt tracking
   updatedAt DateTime @updatedAt
 }
-
-
 
 model Vendor {
   id           Int     @id @default(autoincrement())
@@ -185,8 +182,8 @@ model Vendor {
   dinnerEnd      String?
 
   // Status
-  isActive Boolean      @default(false)
-  status   VendorStatus @default(PENDING)
+  isActive  Boolean      @default(false)
+  status    VendorStatus @default(PENDING)
   isDeleted Boolean      @default(false)
   deletedAt DateTime?
 
@@ -216,9 +213,6 @@ model VendorBankDetail {
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
-
-
-
 
 model VendorWallet {
   id        Int      @id @default(autoincrement())
@@ -588,4 +582,26 @@ model MealSchedule {
   @@index([orderId, scheduledDate]) // for user order tracking
   @@index([vendorId, scheduledDate]) // for vendor schedule queries
   @@index([deliveryPartnerId, scheduledDate]) // for delivery partner queries
+}
+
+enum PayType {
+  ORDER
+  WALLET
+}
+
+// payment models
+model Payments {
+  id              Int     @id @default(autoincrement())
+  userId          Int
+  orderId         Int
+  razorpayOrderId String? // for Razorpay payments
+
+  amount      Float
+  signature   String
+  paymentType PayType
+  paymentId   String? // external payment gateway ID
+  status      PaymentStatus @default(PENDING)
+  source      String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }

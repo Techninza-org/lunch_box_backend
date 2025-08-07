@@ -28,7 +28,8 @@ import {
   toggleVendorActive,
   getVendorProfile,
   getVendorNotifications,
-  searchMeals
+  searchMeals,
+  getVendorOrderInsights
 } from "../controller/vendor.controller.js";
 
 const upload = getMulterUpload("meals");
@@ -47,6 +48,7 @@ router.get("/search-meals", searchMeals);
 router.get("/orders", getVendorOrders);
 router.get("/orders/:orderId", getVendorOrderById);
 router.patch("/orders/:orderId/status", updateVendorOrderStatus);
+router.get("/get-order-insights", getVendorOrderInsights);
 
 // Schedule management routes
 router.get("/schedules", getVendorMealSchedules);

@@ -350,3 +350,42 @@ export const searchMeals = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getVendorOrderInsights = async (req, res) => {
+  try {
+    const vendorId = req.user?.id;
+
+    if (!vendorId) {
+      return res.status(401).json({ error: "Unauthorized: Vendor ID missing" });
+    }
+
+    // Fetch order counts by status and total meals
+    const [totalOrders, pending, confirmed, completed, cancelled, totalMeals] = await Promise.all([
+      prisma.order.count({ where: { vendorId } }),
+      prisma.order.count({ where: { vendorId, status: "PENDING" } }),
+      prisma.order.count({ where: { vendorId, status: "CONFIRMED" } }),
+      prisma.order.count({ where: { vendorId, status: "COMPLETED" } }),
+      prisma.order.count({ where: { vendorId, status: "CANCELLED" } }),
+      prisma.order.aggregate({
+        _sum: {
+          totalMealsInSubscription: true,
+        },
+        where: {
+          vendorId,
+        },
+      }),
+    ]);
+
+    return res.status(200).json({
+      totalOrders,
+      pending,
+      confirmed,
+      completed,
+      cancelled,
+      totalMeals: totalMeals._sum.totalMealsInSubscription || 0,
+    });
+  } catch (error) {
+    console.error("Error getting vendor order insights:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

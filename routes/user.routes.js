@@ -24,7 +24,10 @@ import {
   getCartSummary,
 } from "../controller/cart.controller.js";
 
-import { createRazorpayOrder } from "../controller/payment.controller.js";
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "../controller/payment.controller.js";
 
 const logoUpload = getMulterUpload("users");
 
@@ -69,5 +72,6 @@ router.put(
 
 // payment routes
 router.post("/create-razorpay-order", createRazorpayOrder);
+router.post("/verify-payment", verifyRazorpayPayment);
 
 export default router;

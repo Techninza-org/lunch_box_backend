@@ -389,3 +389,37 @@ export const getVendorOrderInsights = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getSupportTickets = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId || role !== "VENDOR") {
+      return res.status(403).json({ error: "Access denied. Only vendors can access this endpoint." });
+    }
+
+    const tickets = await prisma.supportTicket.findMany({
+      where: {
+        userId,
+        role,
+        status: {
+          not: "CLOSED",
+        },
+      },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return res.status(200).json({ tickets });
+  } catch (error) {
+    console.error("Error fetching vendor support tickets:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

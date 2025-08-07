@@ -33,7 +33,8 @@ import {
   getMealById,
   getAllMealsGroupedByVerification,
   toggleMealAvailability,
-  getAllNotifications
+  getAllNotifications,
+  getAllSupportTicketsGroupedById,
 
 } from "../controller/admin.controller.js";
 import {
@@ -107,5 +108,8 @@ router.patch(
   assignDeliveryPartnerAdmin
 );
 router.get("/dashboard-stats", getAdminDashboardStats);
+
+//----------Support Ticket Management---------//
+router.get("/get-all-support-tickets", getAllSupportTicketsGroupedById);
 
 export default router;

@@ -239,7 +239,12 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
   try {
     const deliveryPartnerId = req.user.id;
     const { scheduleId } = req.params;
-    const { status, notes, latitude, longitude } = req.body;
+    const { 
+      status,
+      notes,
+      latitude,
+      longitude
+     } = req.body;
 
     // Delivery partners can only update certain statuses
     const allowedStatuses = ["OUT_FOR_DELIVERY", "DELIVERED", "MISSED"];
@@ -286,13 +291,13 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
     };
 
     // Add delivery timestamp and location for delivered status
-    if (status === "DELIVERED") {
-      updateData.actualDeliveryTime = new Date();
-      if (latitude && longitude) {
-        updateData.deliveryLat = parseFloat(latitude);
-        updateData.deliveryLng = parseFloat(longitude);
-      }
-    }
+    // if (status === "DELIVERED") {
+    //   updateData.actualDeliveryTime = new Date();
+    //   if (latitude && longitude) {
+    //     updateData.deliveryLat = parseFloat(latitude);
+    //     updateData.deliveryLng = parseFloat(longitude);
+    //   }
+    // }
 
     const updatedSchedule = await prisma.$transaction(async (tx) => {
       // Update schedule

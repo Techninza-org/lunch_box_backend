@@ -15,6 +15,11 @@ import {
   updateUserProfile,
 } from "../controller/user.controller.js";
 
+import { 
+  createSupportTicket,
+  getSupportTickets
+ } from "../controller/support.controller.js";
+
 import {
   addToCart,
   getCart,
@@ -64,5 +69,9 @@ router.put(
   logoUpload.single("profileImage"),
   updateUserProfile
 );
+
+router.post("/create-user-support-ticket", createSupportTicket);
+router.get("/get-user-support-tickets", getSupportTickets);
+
 
 export default router;

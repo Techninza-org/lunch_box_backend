@@ -1045,6 +1045,50 @@ export const getAllNotifications = async (req, res) => {
   }
 };
 
+export const getAllSupportTicketsGroupedById = async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+
+    // Optionally: verify admin in DB if needed
+    const admin = await prisma.admin.findUnique({ where: { id: adminId } });
+
+    if (!admin) {
+      return res.status(403).json({ error: 'Access denied. Only admins can view all tickets.' });
+    }
+
+    const tickets = await prisma.supportTicket.findMany({
+      // where: {
+      //   status: { not: 'CLOSED' },
+      // },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const users = [];
+    const vendors = [];
+    const deliveryPartners = [];
+
+    for (const ticket of tickets) {
+      if (ticket.role === 'USER') users.push(ticket);
+      else if (ticket.role === 'VENDOR') vendors.push(ticket);
+      else if (ticket.role === 'DELIVERY') deliveryPartners.push(ticket);
+    }
+
+    return res.status(200).json({
+      users,
+      vendors,
+      deliveryPartners,
+    });
+  } catch (error) {
+    console.error('Error fetching support tickets:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 
 
 

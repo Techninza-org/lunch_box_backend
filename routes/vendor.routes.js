@@ -29,8 +29,13 @@ import {
   getVendorProfile,
   getVendorNotifications,
   searchMeals,
-  getVendorOrderInsights
+  getVendorOrderInsights,
 } from "../controller/vendor.controller.js";
+
+import { 
+  createSupportTicket,
+  getSupportTickets
+ } from "../controller/support.controller.js";
 
 const upload = getMulterUpload("meals");
 const logoUpload = getMulterUpload("vendors");
@@ -70,5 +75,9 @@ router.get("/get-vendor-notifications", getVendorNotifications);
 
 // Dashboard statistics
 router.get("/dashboard-stats", getVendorDashboardStats);
+
+// Support ticket routes
+router.post("/create-vendor-support-ticket", createSupportTicket);
+router.get("/get-vendor-support-tickets", getSupportTickets);
 
 export default router;

@@ -12,6 +12,10 @@ import {
   updateDeliveryPartnerProfile,
   addOrUpdateDeliveryBankDetail
 } from "../controller/delivery.controller.js";
+import { 
+  createSupportTicket,
+  getSupportTickets
+ } from "../controller/support.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
 const deliveryPartner = getMulterUpload("delivery-partners");
@@ -39,5 +43,10 @@ router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
 router.put("/update-delivery-profile", deliveryPartner.any(), updateDeliveryPartnerProfile);
 router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
+
+// Support ticket routes
+router.post("/create-delivery-support-ticket", createSupportTicket);
+router.get("/get-delivery-support-tickets", getSupportTickets);
+
 
 export default router;

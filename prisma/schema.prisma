@@ -589,3 +589,65 @@ model MealSchedule {
   @@index([vendorId, scheduledDate]) // for vendor schedule queries
   @@index([deliveryPartnerId, scheduledDate]) // for delivery partner queries
 }
+
+//--------------model for support tickets-------------//
+
+enum SupportRole {
+  USER
+  VENDOR
+  DELIVERY
+  ADMIN
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// enum SupportTicketPriority {
+//   LOW
+//   MEDIUM
+//   HIGH
+//   URGENT
+// }
+
+enum SupportTicketType {
+  GENERAL
+  TECHNICAL
+  BILLING
+  DELIVERY
+  OTHER
+}
+
+model SupportTicket {
+  id         Int                   @id @default(autoincrement())
+  userId     Int                   // ID from User, Vendor, or DeliveryPartner
+  role       SupportRole           // Who created the ticket
+  subject    String
+  status     SupportTicketStatus   @default(OPEN)
+  // priority   SupportTicketPriority @default(MEDIUM)
+  type       SupportTicketType     @default(GENERAL)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  messages   SupportMessage[]
+
+  @@index([userId, role])
+}
+
+model SupportMessage {
+  id            Int         @id @default(autoincrement())
+  ticketId      Int
+  senderRole    SupportRole // USER, VENDOR, DELIVERY_PARTNER, ADMIN
+  senderId      Int         // ID of the sender (admin/user/vendor/deliveryPartner) 
+  message       String
+  // attachmentUrl String?     // optional file/image
+  createdAt     DateTime    @default(now())
+
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+

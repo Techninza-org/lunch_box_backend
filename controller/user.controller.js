@@ -570,6 +570,35 @@ export const addAddress = async (req, res) => {
   }
 };
 
+// Get user addresses
+export const getAddress = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    const addresses = await prisma.userAddress.findMany({
+      where: { userId },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: addresses,
+    });
+  } catch (error) {
+    console.error("Error fetching user addresses:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 export const getUserNotifications = async (req, res) => {
   const userId = req.user?.id;
 
@@ -580,10 +609,7 @@ export const getUserNotifications = async (req, res) => {
   try {
     const notifications = await prisma.notification.findMany({
       where: {
-        OR: [
-          { userId: userId },
-          { role: "USER" },
-        ],
+        OR: [{ userId: userId }, { role: "USER" }],
       },
       orderBy: {
         createdAt: "desc",
@@ -639,7 +665,9 @@ export const updateUserProfile = async (req, res) => {
         gender,
         // longitude: longitude ? parseFloat(longitude) : undefined,
         // latitude: latitude ? parseFloat(latitude) : undefined,
-        profileImage: profileImage ? `uploads/users/${profileImage}` : undefined,
+        profileImage: profileImage
+          ? `uploads/users/${profileImage}`
+          : undefined,
       },
       select: {
         id: true,

@@ -63,6 +63,7 @@ export const getHomePage = async (req, res) => {
     const vendors = await prisma.vendor.findMany({
       where: { status: "APPROVED" },
       select: {
+        id: true,
         name: true,
         email: true,
         phoneNumber: true,

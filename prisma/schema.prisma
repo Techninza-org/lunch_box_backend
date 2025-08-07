@@ -48,6 +48,20 @@ model DeliveryPartner {
   isDeleted      Boolean  @default(false)
   deletedAt      DateTime?
   MealSchedule MealSchedule[]
+  DeliveryBankDetail DeliveryBankDetail?
+}
+
+model DeliveryBankDetail {
+  id            Int      @id @default(autoincrement())
+  deliveryId      Int      @unique
+  accountHolder String
+  accountNumber String   @unique
+  ifscCode      String
+  bankName      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  deliveryPartner DeliveryPartner @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -202,6 +216,8 @@ model VendorBankDetail {
 
   vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 }
+
+
 
 
 model VendorWallet {

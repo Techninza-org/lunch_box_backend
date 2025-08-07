@@ -2,6 +2,18 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+function indexFiles(files) {
+  const map = {};
+  if (!files) return map;
+  for (const file of files) {
+    if (!map[file.fieldname]) {
+      map[file.fieldname] = [];
+    }
+    map[file.fieldname].push(file);
+  }
+  return map;
+}
+
 export const getDeliveryNotifications = async (req, res) => {
   const deliveryId = req.user?.id;
 
@@ -126,6 +138,68 @@ export const getMealsByDeliveryPartner = async (req, res) => {
     return res.status(200).json({ meals });
   } catch (error) {
     console.error("Error fetching meals for delivery partner:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateDeliveryPartnerProfile = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+    const filesByField = indexFiles(req.files);
+
+
+    if (!deliveryPartnerId) {
+      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+    }
+
+    const {
+      name,
+      phoneNumber,
+      phoneNumber2,
+      // profileImage,
+      address,
+      city,
+      state,
+      zipCode,
+    } = req.body;
+
+    // get profile image  from request
+    const profileImage = filesByField["profile-image"]
+      ? `uploads/delivery-partners/${filesByField["profile-image"][0].filename}`
+      : null;
+
+    // Validate profile image
+    if (!profileImage) {
+      return res
+        .status(400)
+        .json({ message: "Profile image is required" });
+    }
+
+    const updatedPartner = await prisma.deliveryPartner.update({
+      where: { id: deliveryPartnerId },
+      data: {
+        name,
+        phoneNumber,
+        phoneNumber2,
+        profileImage,
+        address,
+        city,
+        state,
+        zipCode,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      data: updatedPartner,
+    });
+  } catch (error) {
+    console.error("Error updating delivery partner profile:", error);
+
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: "Phone number or email already in use" });
+    }
+
     return res.status(500).json({ error: "Internal server error" });
   }
 };

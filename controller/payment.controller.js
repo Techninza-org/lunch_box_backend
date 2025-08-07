@@ -45,7 +45,7 @@ export const createRazorpayOrder = async (req, res, next) => {
 };
 
 // Verify Razorpay payment signature
-export const verifyPayment = async (req, res, next) => {
+export const verifyRazorpayPayment = async (req, res, next) => {
   try {
     const {
       razorpay_order_id,

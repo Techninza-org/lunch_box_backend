@@ -34,7 +34,8 @@ import {
 
 import { 
   createSupportTicket,
-  getSupportTickets
+  getSupportTickets,
+  sendMessageToSupportTicket
  } from "../controller/support.controller.js";
 
 const upload = getMulterUpload("meals");
@@ -79,5 +80,7 @@ router.get("/dashboard-stats", getVendorDashboardStats);
 // Support ticket routes
 router.post("/create-vendor-support-ticket", createSupportTicket);
 router.get("/get-vendor-support-tickets", getSupportTickets);
+router.post("/send-message-to-support-ticket-vendor/:ticketId", sendMessageToSupportTicket);
+
 
 export default router;

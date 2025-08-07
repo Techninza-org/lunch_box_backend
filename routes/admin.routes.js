@@ -44,6 +44,9 @@ import {
   assignDeliveryPartnerAdmin,
   getAdminDashboardStats,
 } from "../controller/admin.order.controller.js";
+import {
+  sendMessageToSupportTicket
+} from "../controller/support.controller.js";
 
 // Define admin routes here
 
@@ -111,5 +114,6 @@ router.get("/dashboard-stats", getAdminDashboardStats);
 
 //----------Support Ticket Management---------//
 router.get("/get-all-support-tickets", getAllSupportTicketsGroupedById);
+router.post("/send-message-to-support-ticket-admin/:ticketId", sendMessageToSupportTicket);
 
 export default router;

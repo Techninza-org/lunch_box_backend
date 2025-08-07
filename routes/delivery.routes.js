@@ -14,7 +14,8 @@ import {
 } from "../controller/delivery.controller.js";
 import { 
   createSupportTicket,
-  getSupportTickets
+  getSupportTickets,
+  sendMessageToSupportTicket
  } from "../controller/support.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
@@ -47,6 +48,8 @@ router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
 // Support ticket routes
 router.post("/create-delivery-support-ticket", createSupportTicket);
 router.get("/get-delivery-support-tickets", getSupportTickets);
+router.post("/send-message-to-support-ticket-delivery/:ticketId", sendMessageToSupportTicket);
+
 
 
 export default router;

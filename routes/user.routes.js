@@ -17,7 +17,8 @@ import {
 
 import { 
   createSupportTicket,
-  getSupportTickets
+  getSupportTickets,
+  sendMessageToSupportTicket
  } from "../controller/support.controller.js";
 
 import {
@@ -81,6 +82,8 @@ router.post("/verify-payment", verifyRazorpayPayment);
 
 router.post("/create-user-support-ticket", createSupportTicket);
 router.get("/get-user-support-tickets", getSupportTickets);
+router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSupportTicket);
+
 
 
 export default router;

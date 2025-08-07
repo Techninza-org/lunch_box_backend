@@ -63,9 +63,9 @@ export const getSupportTickets = async (req, res) => {
       where: {
         userId,
         role,
-        status: {
-          not: "CLOSED",
-        },
+        // status: {
+        //   not: "CLOSED",
+        // },
       },
       include: {
         messages: {
@@ -81,5 +81,52 @@ export const getSupportTickets = async (req, res) => {
   } catch (error) {
     console.error(`Error fetching ${role} support tickets:`, error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const sendMessageToSupportTicket = async (req, res) => {
+  const { id: senderId, role: senderRole } = req.user;
+  const { ticketId } = req.params;
+  const { message } = req.body;
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: "Message cannot be empty." });
+  }
+
+  try {
+    // Validate ticket exists
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: parseInt(ticketId) },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Support ticket not found." });
+    }
+
+    // Optional: check if sender is allowed to message this ticket
+    const isSenderOwner = ticket.userId === senderId && ticket.role === senderRole;
+    const isAdmin = senderRole === 'ADMIN';
+
+    if (!isSenderOwner && !isAdmin) {
+      return res.status(403).json({ error: "Not authorized to send message to this ticket." });
+    }
+
+    // Create new message
+    const newMessage = await prisma.supportMessage.create({
+      data: {
+        ticketId: ticket.id,
+        senderId,
+        senderRole,
+        message: message.trim(),
+      },
+    });
+
+    return res.status(201).json({
+      message: "Message sent successfully.",
+      data: newMessage,
+    });
+  } catch (error) {
+    console.error("Error sending support message:", error);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };

@@ -29,6 +29,11 @@ import {
   getCartSummary,
 } from "../controller/cart.controller.js";
 
+import {
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "../controller/payment.controller.js";
+
 const logoUpload = getMulterUpload("users");
 
 router.post("/add-current-location", addUserCurrentLocation);
@@ -69,6 +74,10 @@ router.put(
   logoUpload.single("profileImage"),
   updateUserProfile
 );
+
+// payment routes
+router.post("/create-razorpay-order", createRazorpayOrder);
+router.post("/verify-payment", verifyRazorpayPayment);
 
 router.post("/create-user-support-ticket", createSupportTicket);
 router.get("/get-user-support-tickets", getSupportTickets);

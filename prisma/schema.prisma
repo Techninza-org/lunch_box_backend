@@ -415,11 +415,8 @@ enum OrderType {
 enum OrderStatus {
   PENDING
   CONFIRMED
-  PREPARING
-  OUT_FOR_DELIVERY
-  DELIVERED
+  COMPLETED
   CANCELLED
-  REFUNDED
 }
 
 enum PaymentType {

@@ -61,3 +61,28 @@ export const getTodayMealSchedulesForDeliveryPartner = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const updateMealScheduleStatus = async (req, res) => {
+  const mealScheduleId = parseInt(req.params.id);
+  const { status } = req.body;
+
+  if (isNaN(mealScheduleId)) {
+    return res.status(400).json({ error: "Invalid MealSchedule ID" });
+  }
+
+  if (!Object.values(MealScheduleStatus).includes(status)) {
+    return res.status(400).json({ error: "Invalid status value" });
+  }
+
+  try {
+    const updated = await prisma.mealSchedule.update({
+      where: { id: mealScheduleId },
+      data: { status },
+    });
+
+    return res.status(200).json({ message: "Status updated", data: updated });
+  } catch (error) {
+    console.error("Error updating meal status:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

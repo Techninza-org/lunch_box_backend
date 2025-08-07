@@ -30,7 +30,7 @@ router.get("/", (req, res) => {
   res.json({ message: "Delivery list" });
 });
 
-router.get("/get-delivery-notifications", getDeliveryNotifications);
-router.get("/get-scheduled-meals", getTodayMealSchedulesForDeliveryPartner);
+// router.get("/get-delivery-notifications", getDeliveryNotifications);
+// router.get("/get-scheduled-meals", getTodayMealSchedulesForDeliveryPartner);
 
 export default router;

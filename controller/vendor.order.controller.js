@@ -241,10 +241,10 @@ export const updateVendorOrderStatus = async (req, res) => {
   try {
     const vendorId = req.user.id;
     const { orderId } = req.params;
-    const { status, notes } = req.body;
+    const { status, notes } = req.body; 
 
     // Vendors can only update certain statuses
-    const allowedStatuses = ["CONFIRMED", "PREPARING", "READY_FOR_PICKUP"];
+    const allowedStatuses = ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -295,15 +295,15 @@ export const updateVendorOrderStatus = async (req, res) => {
     });
 
     // If order is confirmed, update related schedules
-    if (status === "CONFIRMED") {
-      await prisma.mealSchedule.updateMany({
-        where: {
-          orderId: Number(orderId),
-          status: "SCHEDULED",
-        },
-        data: { status: "CONFIRMED" },
-      });
-    }
+    // if (status === "CONFIRMED") {
+    //   await prisma.mealSchedule.updateMany({
+    //     where: {
+    //       orderId: Number(orderId),
+    //       status: "SCHEDULED",
+    //     },
+    //     data: { status: "CONFIRMED" },
+    //   });
+    // }
 
     res.status(200).json({
       success: true,

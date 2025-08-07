@@ -9,7 +9,8 @@ import {
 import {
   getDeliveryNotifications,
   getMealsByDeliveryPartner,
-  updateDeliveryPartnerProfile
+  updateDeliveryPartnerProfile,
+  addOrUpdateDeliveryBankDetail
 } from "../controller/delivery.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
@@ -37,5 +38,6 @@ router.get("/", (req, res) => {
 router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
 router.put("/update-delivery-profile", deliveryPartner.any(), updateDeliveryPartnerProfile);
+router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
 
 export default router;

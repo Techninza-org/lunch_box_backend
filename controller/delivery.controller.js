@@ -203,3 +203,70 @@ export const updateDeliveryPartnerProfile = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const addOrUpdateDeliveryBankDetail = async (req, res) => {
+  const deliveryId = req.user?.id;
+
+  if (!deliveryId || isNaN(deliveryId)) {
+    return res.status(401).json({ message: "Unauthorized or invalid delivery ID" });
+  }
+
+  const {
+    accountHolder,
+    accountNumber,
+    ifscCode,
+    bankName,
+  } = req.body;
+
+  if (!accountHolder || !accountNumber || !ifscCode || !bankName) {
+    return res.status(400).json({ message: "Required fields missing" });
+  }
+
+  try {
+    const existingDetails = await prisma.deliveryBankDetail.findUnique({
+      where: { deliveryId },
+    });
+
+    if (existingDetails) {
+      // Update bank details
+      const updatedDetails = await prisma.deliveryBankDetail.update({
+        where: { deliveryId },
+        data: {
+          accountHolder,
+          accountNumber,
+          ifscCode,
+          bankName,
+        },
+      });
+
+      return res.status(200).json({
+        message: "Bank details updated successfully",
+        data: updatedDetails,
+      });
+    } else {
+      // Create new bank details
+      const newDetails = await prisma.deliveryBankDetail.create({
+        data: {
+          deliveryId,
+          accountHolder,
+          accountNumber,
+          ifscCode,
+          bankName,
+        },
+      });
+
+      return res.status(201).json({
+        message: "Bank details added successfully",
+        data: newDetails,
+      });
+    }
+  } catch (error) {
+    console.error("Error saving bank details:", error);
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        message: `Duplicate value for unique field: ${error.meta.target}`,
+      });
+    }
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

@@ -8,7 +8,7 @@ import {
 } from "../controller/delivery.order.controller.js";
 import {
   getDeliveryNotifications,
-  getTodayMealSchedulesForDeliveryPartner,
+  getMealsByDeliveryPartner,
 } from "../controller/delivery.controller.js";
 
 const router = Router();
@@ -30,7 +30,7 @@ router.get("/", (req, res) => {
   res.json({ message: "Delivery list" });
 });
 
-// router.get("/get-delivery-notifications", getDeliveryNotifications);
-// router.get("/get-scheduled-meals", getTodayMealSchedulesForDeliveryPartner);
+router.get("/get-delivery-notifications", getDeliveryNotifications);
+router.get("/get-order-history", getMealsByDeliveryPartner);
 
 export default router;

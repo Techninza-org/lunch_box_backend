@@ -86,3 +86,46 @@ export const updateMealScheduleStatus = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getMealsByDeliveryPartner = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+
+    if (!deliveryPartnerId) {
+      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+    }
+
+    const meals = await prisma.mealSchedule.findMany({
+      where: {
+        deliveryPartnerId,
+      },
+      orderBy: {
+        scheduledDate: 'asc',
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            userId: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryState: true,
+            deliveryZipCode: true,
+            deliveryPhone: true,
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({ meals });
+  } catch (error) {
+    console.error("Error fetching meals for delivery partner:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

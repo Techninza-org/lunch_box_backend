@@ -10,6 +10,7 @@ import {
   searchMeals,
   getMealById,
   addAddress,
+  getAddress,
   getUserNotifications,
   updateUserProfile,
 } from "../controller/user.controller.js";
@@ -27,6 +28,7 @@ const logoUpload = getMulterUpload("users");
 
 router.post("/add-current-location", addUserCurrentLocation);
 router.post("/add-address", addAddress);
+router.get("/get-addresses", getAddress);
 router.get("/home", getHomePage);
 // Get all restaurants by user location
 router.get(
@@ -57,7 +59,10 @@ router.delete("/cart/:cartItemId", removeFromCart);
 // Get user notifications
 router.get("/get-user-notifications", getUserNotifications);
 // User profile management
-router.put("/update-profile", logoUpload.single("profileImage"), updateUserProfile);
-
+router.put(
+  "/update-profile",
+  logoUpload.single("profileImage"),
+  updateUserProfile
+);
 
 export default router;

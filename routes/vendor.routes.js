@@ -36,7 +36,13 @@ import {
   createSupportTicket,
   getSupportTickets,
   sendMessageToSupportTicket
- } from "../controller/support.controller.js";
+} from "../controller/support.controller.js";
+
+import { 
+  createVendorWalletOrder,
+  verifyVendorWalletPayment
+} from "../controller/payment.controller.js";
+ 
 
 const upload = getMulterUpload("meals");
 const logoUpload = getMulterUpload("vendors");
@@ -82,5 +88,9 @@ router.post("/create-vendor-support-ticket", createSupportTicket);
 router.get("/get-vendor-support-tickets", getSupportTickets);
 router.post("/send-message-to-support-ticket-vendor/:ticketId", sendMessageToSupportTicket);
 
+// Payment routes
+router.post("/create-vendor-wallet-order", createVendorWalletOrder);
+router.post("/verify-vendor-wallet", verifyVendorWalletPayment);
 
-export default router;
+
+export default router; 

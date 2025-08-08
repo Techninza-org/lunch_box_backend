@@ -107,3 +107,68 @@ export const verifyRazorpayPayment = async (req, res, next) => {
     return next(err);
   }
 };
+
+// Create a Razorpay order for vendor wallet
+export const createVendorWalletOrder = async (req, res) => {
+  const { amount } = req.body;
+  const vendorId = req.user.id; // assuming vendor is logged in
+
+  if (!amount || amount <= 0) {
+    return res.status(400).json({ error: "Invalid amount" });
+  }
+
+  const order = await razorpay.orders.create({
+    amount: amount * 100,
+    currency: "INR",
+    receipt: `vendor_wallet_${Date.now()}_${vendorId}`,
+  });
+
+  res.json({ success: true, orderId: order.id });
+};
+
+export const verifyVendorWalletPayment = async (req, res) => {
+  const {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    amount,
+  } = req.body;
+
+  const vendorId = req.user.id;
+
+  const body = razorpay_order_id + "|" + razorpay_payment_id;
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    .update(body.toString())
+    .digest("hex");
+
+  if (expectedSignature !== razorpay_signature) {
+    return res.status(400).json({ error: "Invalid payment signature" });
+  }
+
+  // ✅ Payment is verified — use transaction to ensure consistency
+  await prisma.$transaction(async (tx) => {
+    // 1. Add transaction entry
+    await tx.vendorWalletTransaction.create({
+      data: {
+        vendorId,
+        amount,
+        type: "CREDIT",
+      },
+    });
+
+    // 2. Update wallet balance
+    await tx.vendorWallet.update({
+      where: { vendorId },
+      data: {
+        balance: {
+          increment: amount,
+        },
+      },
+    });
+  });
+
+  res.json({ success: true, message: "Wallet credited successfully" });
+};
+
+

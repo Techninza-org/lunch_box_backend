@@ -206,8 +206,6 @@ model VendorBankDetail {
   accountNumber String   @unique
   ifscCode      String
   bankName      String
-  // branchName    String?
-  // upiId         String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -244,6 +242,7 @@ model VendorWalletTransaction {
   vendorId  Int
   amount    Float
   type      WalletTransactionType
+  paymentId String?               @unique
   createdAt DateTime              @default(now())
   updatedAt DateTime              @updatedAt
 
@@ -638,32 +637,31 @@ enum SupportTicketType {
 }
 
 model SupportTicket {
-  id         Int                   @id @default(autoincrement())
-  userId     Int                   // ID from User, Vendor, or DeliveryPartner
-  role       SupportRole           // Who created the ticket
-  subject    String
-  status     SupportTicketStatus   @default(OPEN)
+  id        Int                 @id @default(autoincrement())
+  userId    Int // ID from User, Vendor, or DeliveryPartner
+  role      SupportRole // Who created the ticket
+  subject   String
+  status    SupportTicketStatus @default(OPEN)
   // priority   SupportTicketPriority @default(MEDIUM)
-  type       SupportTicketType     @default(GENERAL)
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
+  type      SupportTicketType   @default(GENERAL)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
-  messages   SupportMessage[]
+  messages SupportMessage[]
 
   @@index([userId, role])
 }
 
 model SupportMessage {
-  id            Int         @id @default(autoincrement())
-  ticketId      Int
-  senderRole    SupportRole // USER, VENDOR, DELIVERY_PARTNER, ADMIN
-  senderId      Int         // ID of the sender (admin/user/vendor/deliveryPartner) 
-  message       String
+  id         Int         @id @default(autoincrement())
+  ticketId   Int
+  senderRole SupportRole // USER, VENDOR, DELIVERY_PARTNER, ADMIN
+  senderId   Int // ID of the sender (admin/user/vendor/deliveryPartner) 
+  message    String
   // attachmentUrl String?     // optional file/image
-  createdAt     DateTime    @default(now())
+  createdAt  DateTime    @default(now())
 
-  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
 }
-

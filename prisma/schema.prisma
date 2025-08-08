@@ -592,7 +592,7 @@ enum PayType {
 model Payments {
   id              Int     @id @default(autoincrement())
   userId          Int
-  orderId         Int
+  // orderId         Int
   razorpayOrderId String? // for Razorpay payments
 
   amount      Float

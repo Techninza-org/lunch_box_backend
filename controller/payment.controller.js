@@ -67,7 +67,7 @@ export const verifyRazorpayPayment = async (req, res, next) => {
       !razorpay_signature ||
       !amount ||
       !currency ||
-      !order_id ||
+      // !order_id ||
       !user_id
     ) {
       return res
@@ -89,7 +89,7 @@ export const verifyRazorpayPayment = async (req, res, next) => {
       amount: Math.round(amount / 100), // Convert paise to ₹ (if from Razorpay)
       currency,
       userId: parseInt(user_id), // Ensure it's an integer
-      orderId: parseInt(order_id), // 👈 FIX THIS if it's a string
+      // orderId: parseInt(order_id), // 👈 FIX THIS if it's a string
       status: isValid ? "COMPLETED" : "FAILED",
       paymentType: "ORDER",
       source: "RAZORPAY",

@@ -596,6 +596,7 @@ model Payments {
   razorpayOrderId String? // for Razorpay payments
 
   amount      Float
+  currency    String        @default("INR") // default to INR
   signature   String
   paymentType PayType
   paymentId   String? // external payment gateway ID

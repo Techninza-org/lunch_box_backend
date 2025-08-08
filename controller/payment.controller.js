@@ -74,6 +74,7 @@ export const verifyRazorpayPayment = async (req, res, next) => {
         .status(400)
         .json({ status: 400, error: "Missing required fields" });
     }
+    console.log("keyyyyy:::::", process.env.RAZORPAY_KEY_SECRET);
 
     // Create signature hash
     const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
@@ -148,6 +149,7 @@ export const verifyVendorWalletPayment = async (req, res) => {
 
   // ✅ Payment is verified — use transaction to ensure consistency
   await prisma.$transaction(async (tx) => {
+    
     // 1. Add transaction entry
     await tx.vendorWalletTransaction.create({
       data: {

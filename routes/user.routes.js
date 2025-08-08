@@ -33,6 +33,8 @@ import {
 import {
   createRazorpayOrder,
   verifyRazorpayPayment,
+  createUserWalletOrder,
+  verifyUserWalletPayment
 } from "../controller/payment.controller.js";
 
 const logoUpload = getMulterUpload("users");
@@ -79,6 +81,8 @@ router.put(
 // payment routes
 router.post("/create-razorpay-order", createRazorpayOrder);
 router.post("/verify-payment", verifyRazorpayPayment);
+router.post("/create-user-wallet-order", createUserWalletOrder);
+router.post("/verify-user-wallet", verifyUserWalletPayment);
 
 // Support routes
 router.post("/create-user-support-ticket", createSupportTicket);

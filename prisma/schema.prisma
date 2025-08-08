@@ -82,6 +82,9 @@ model User {
   UserAddress  UserAddress[]
   CartItem     CartItem[]
   Order        Order[]
+
+  UserWallet            UserWallet[]
+  UserWalletTransaction UserWalletTransaction[]
   // notifications Notification[]
 
   // UserCurrentLocation UserCurrentLocation[]
@@ -222,6 +225,16 @@ model VendorWallet {
   vendor Vendor @relation(fields: [vendorId], references: [id])
 }
 
+model UserWallet {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
 model Settings {
   id                        Int   @id @default(autoincrement())
   gst                       Float
@@ -247,6 +260,18 @@ model VendorWalletTransaction {
   updatedAt DateTime              @updatedAt
 
   vendor Vendor @relation(fields: [vendorId], references: [id])
+}
+
+model UserWalletTransaction {
+  id        Int                   @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  type      WalletTransactionType
+  paymentId String?               @unique
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
 
 // products

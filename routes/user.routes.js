@@ -80,6 +80,7 @@ router.put(
 router.post("/create-razorpay-order", createRazorpayOrder);
 router.post("/verify-payment", verifyRazorpayPayment);
 
+// Support routes
 router.post("/create-user-support-ticket", createSupportTicket);
 router.get("/get-user-support-tickets", getSupportTickets);
 router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSupportTicket);

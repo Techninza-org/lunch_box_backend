@@ -24,11 +24,12 @@ export const addVendorMeal = async (req, res) => {
     // Step 1: Index uploaded files by their fieldname for easy access
     // This helps to quickly retrieve files like mainImage, gallery images, and option images
     const filesByField = indexFiles(req.files);
+    const vendorId = req.user.id;
 
     // Step 2: Extract all meal-related fields from the request body
     // These include basic info, nutrition, options, tags, etc.
     const {
-      vendorId, // Vendor's ID (required)
+      // vendorId, // Vendor's ID (required)
       title, // Meal title (required)
       description, // Meal description (optional)
       type, // Meal type (lunch, dinner, etc.)

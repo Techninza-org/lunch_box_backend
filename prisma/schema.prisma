@@ -290,14 +290,14 @@ enum MealType {
   Evening
 }
 
-enum CuisineType {
-  Marathi
-  NorthIndian
-  SouthIndian
-  Gujarati
-  Bengali
-  Continental
-}
+// enum CuisineType {
+//   Marathi
+//   NorthIndian
+//   SouthIndian
+//   Gujarati
+//   Bengali
+//   Continental
+// }
 
 // MEAL
 model Meal {
@@ -308,7 +308,7 @@ model Meal {
   image       String? // main image thumbnail
   type        MealType // lunch or dinner
   configType  MealConfigType // SINGLE or CUSTOMIZABLE
-  cuisine     CuisineType
+  cuisine     String?
   isVeg       Boolean // true/false
 
   // Nutrition Info

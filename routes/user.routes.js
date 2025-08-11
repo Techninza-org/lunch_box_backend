@@ -13,6 +13,7 @@ import {
   getAddress,
   getUserNotifications,
   updateUserProfile,
+  getUserWallet
 } from "../controller/user.controller.js";
 
 import { 
@@ -34,7 +35,7 @@ import {
   createRazorpayOrder,
   verifyRazorpayPayment,
   createUserWalletOrder,
-  verifyUserWalletPayment
+  verifyUserWalletPayment,
 } from "../controller/payment.controller.js";
 
 const logoUpload = getMulterUpload("users");
@@ -83,6 +84,8 @@ router.post("/create-razorpay-order", createRazorpayOrder);
 router.post("/verify-payment", verifyRazorpayPayment);
 router.post("/create-user-wallet-order", createUserWalletOrder);
 router.post("/verify-user-wallet", verifyUserWalletPayment);
+router.get("/get-user-wallet", getUserWallet);
+
 
 // Support routes
 router.post("/create-user-support-ticket", createSupportTicket);

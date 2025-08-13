@@ -13,7 +13,8 @@ import {
   getAddress,
   getUserNotifications,
   updateUserProfile,
-  getUserWallet
+  getUserWallet,
+  getUserProfile,
 } from "../controller/user.controller.js";
 
 import { 
@@ -78,10 +79,13 @@ router.put(
   logoUpload.single("profileImage"),
   updateUserProfile
 );
+router.get("/get-user-profile", getUserProfile)
 
 // payment routes
 router.post("/create-razorpay-order", createRazorpayOrder);
 router.post("/verify-payment", verifyRazorpayPayment);
+
+// User wallet routes
 router.post("/create-user-wallet-order", createUserWalletOrder);
 router.post("/verify-user-wallet", verifyUserWalletPayment);
 router.get("/get-user-wallet", getUserWallet);

@@ -13,7 +13,13 @@ import {
   deliveryPartnerRegister,
   deliveryPartnerLogin,
   userForgotPassword,
-  verifyOtpAndResetPassword
+  userVerifyOtpAndResetPassword,
+  vendorForgotPassword,
+  vendorVerifyOtpAndResetPassword,
+  deliveryForgotPassword,
+  deliveryVerifyOtpAndResetPassword,
+  adminForgotPassword,
+  adminVerifyOtpAndResetPassword
 
 } from "../controller/auth.controller.js";
 
@@ -24,16 +30,20 @@ const deliveryPartner = getMulterUpload("delivery-partners");
 //admin routes
 router.post("/admin-register", adminRegister);
 router.post("/admin-login", adminLogin);
+router.post("/admin-forgot-password", adminForgotPassword);
+router.post("/admin-otp-verify", adminVerifyOtpAndResetPassword);
 
 //user routes
 router.post("/user-register", userRegister);
 router.post("/user-login", userLogin);
 router.post("/user-forgot-password", userForgotPassword);
-router.post("/user-otp-verify", verifyOtpAndResetPassword);
+router.post("/user-otp-verify", userVerifyOtpAndResetPassword);
 
 //vendor routes
 router.post("/vendor-register", logoUpload.single("logo"), vendorRegister);
 router.post("/vendor-login", vendorLogin);
+router.post("/vendor-forgot-password", vendorForgotPassword);
+router.post("/vendor-otp-verify", vendorVerifyOtpAndResetPassword);
 
 //delivery partner routes
 router.post(
@@ -42,4 +52,6 @@ router.post(
   deliveryPartnerRegister
 );
 router.post("/delivery-partner-login", deliveryPartnerLogin);
+router.post("/delivery-forgot-password", deliveryForgotPassword);
+router.post("/delivery-otp-verify", deliveryVerifyOtpAndResetPassword);
 export default router;

@@ -14,22 +14,25 @@ datasource db {
 }
 
 model Admin {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  password     String
+  otp          String?   @db.VarChar(100)
+  otp_expiry   DateTime? @db.DateTime
+  otp_verified Boolean?  @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model DeliveryPartner {
-  id             Int      @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   name           String
-  email          String   @unique
+  email          String    @unique
   password       String
-  phoneNumber    String   @unique
-  isActive       Boolean  @default(false)
-  isVerified     Boolean  @default(false)
+  phoneNumber    String    @unique
+  isActive       Boolean   @default(false)
+  isVerified     Boolean   @default(false)
   profileImage   String?
   identification String?
   longitude      Float?
@@ -39,8 +42,11 @@ model DeliveryPartner {
   state          String?
   zipCode        String?
   phoneNumber2   String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  otp            String?   @db.VarChar(100)
+  otp_expiry     DateTime? @db.DateTime
+  otp_verified   Boolean?  @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
   Order              Order[]
@@ -188,10 +194,13 @@ model Vendor {
   dinnerEnd      String?
 
   // Status
-  isActive  Boolean      @default(false)
-  status    VendorStatus @default(PENDING)
-  isDeleted Boolean      @default(false)
-  deletedAt DateTime?
+  isActive     Boolean      @default(false)
+  status       VendorStatus @default(PENDING)
+  isDeleted    Boolean      @default(false)
+  deletedAt    DateTime?
+  otp          String?      @db.VarChar(100)
+  otp_expiry   DateTime?    @db.DateTime
+  otp_verified Boolean?     @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

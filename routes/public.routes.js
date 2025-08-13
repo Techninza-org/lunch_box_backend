@@ -12,6 +12,9 @@ import {
   vendorLogin,
   deliveryPartnerRegister,
   deliveryPartnerLogin,
+  userForgotPassword,
+  verifyOtpAndResetPassword
+
 } from "../controller/auth.controller.js";
 
 // Use global multer utility for vendor logos
@@ -25,6 +28,8 @@ router.post("/admin-login", adminLogin);
 //user routes
 router.post("/user-register", userRegister);
 router.post("/user-login", userLogin);
+router.post("/user-forgot-password", userForgotPassword);
+router.post("/user-otp-verify", verifyOtpAndResetPassword);
 
 //vendor routes
 router.post("/vendor-register", logoUpload.single("logo"), vendorRegister);

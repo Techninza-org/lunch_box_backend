@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import sendMail from "../utils/sendOtp.js";
 
 // Helper to index files by fieldname
 function indexFiles(files) {
@@ -210,6 +211,137 @@ export const userLogin = async (req, res) => {
   } catch (error) {
     console.error("Error logging in user:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// user forgot password
+export const userForgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otpExpiry = new Date();
+    otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // 10 min expiry
+
+    // Save OTP in DB
+    await prisma.user.update({
+      where: { email },
+      data: { otp, otp_expiry: otpExpiry },
+    });
+
+    // Send OTP via email
+    const emailMessage = `
+      <h2>Password Reset Request</h2>
+      <p>Your OTP is: <b>${otp}</b></p>
+      <p>This OTP will expire in 10 minutes.</p>
+    `;
+
+    const mailResponse = await sendMail(
+      email,
+      "Password Reset OTP",
+      emailMessage,
+      true // HTML format
+    );
+
+    if (!mailResponse.success) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP email",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "OTP sent to your email successfully",
+    });
+  } catch (error) {
+    console.error("OTP send error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+// user reset password
+export const verifyOtpAndResetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, OTP, and new password are required",
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if OTP matches
+    if (user.otp !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // Check if OTP is expired
+    const now = new Date();
+    if (user.otp_expiry < now) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear OTP
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        otp: null,
+        otp_expiry: null,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("OTP verify/reset error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 

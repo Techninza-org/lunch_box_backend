@@ -79,7 +79,7 @@ router.put(
   logoUpload.single("profileImage"),
   updateUserProfile
 );
-router.get("/get-user-profile", getUserProfile)
+router.get("/get-user-profile", getUserProfile);
 
 // payment routes
 router.post("/create-razorpay-order", createRazorpayOrder);

@@ -77,6 +77,9 @@ model User {
   longitude    Float?
   latitude     Float?
   gender       String? // e.g.,
+  otp          String?       @db.VarChar(100)
+  otp_expiry   DateTime?     @db.DateTime
+  otp_verified Boolean?      @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   UserAddress  UserAddress[]
@@ -273,8 +276,6 @@ model VendorWalletTransaction {
 
   vendor Vendor @relation(fields: [vendorId], references: [id])
 }
-
-
 
 // products
 // ✅ ENUMS

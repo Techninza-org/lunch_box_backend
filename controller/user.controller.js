@@ -754,7 +754,6 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-
 export const getUserWallet = async (req, res) => {
   try {
     const userId = req.user?.id;
@@ -781,6 +780,51 @@ export const getUserWallet = async (req, res) => {
   } catch (err) {
     console.error("Error fetching wallet:", err);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+export const getMealsByType = async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: "Meal type is required (e.g., lunch or dinner).",
+      });
+    }
+
+    const meals = await prisma.meal.findMany({
+      where: {
+        type: type, // Ensure enum matches case
+        isDeleted: false,
+        isAvailable: true,
+      },
+      include: {
+        vendor: {
+          select: { id: true, name: true },
+        },
+        mealImages: true,
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: meals.length,
+      data: meals,
+    });
+  } catch (error) {
+    console.error("Error fetching meals by type:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error fetching meals.",
+    });
   }
 };
 

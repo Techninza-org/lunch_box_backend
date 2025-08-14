@@ -783,9 +783,9 @@ export const getUserWallet = async (req, res) => {
   }
 };
 
-export const getMealsByType = async (req, res) => {
+export const getVendorsByMealType = async (req, res) => {
   try {
-    const { type } = req.query;
+    let { type } = req.query;
 
     if (!type) {
       return res.status(400).json({
@@ -794,38 +794,88 @@ export const getMealsByType = async (req, res) => {
       });
     }
 
-    const meals = await prisma.meal.findMany({
+    // Convert to uppercase to match enum values
+    // type = type.toUpperCase();
+
+    const vendors = await prisma.vendor.findMany({
       where: {
-        type: type, // Ensure enum matches case
-        isDeleted: false,
-        isAvailable: true,
-      },
-      include: {
-        vendor: {
-          select: { id: true, name: true },
+        Meal: {
+          some: {
+            type: type,
+            isDeleted: false,
+            isVerified: true,
+          },
         },
-        mealImages: true,
-        dietaryTags: true,
-        ingredients: true,
-        availableDays: true,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: false, // don’t include password in API response
+        phoneNumber: true,
+        phoneNumber2: true,
+        businessName: true,
+        logo: true,
+        gallery: true,
+        description: true,
+        address: true,
+        city: true,
+        state: true,
+        longitude: true,
+        latitude: true,
+        breakfastStart: true,
+        breakfastEnd: true,
+        lunchStart: true,
+        lunchEnd: true,
+        eveningStart: true,
+        eveningEnd: true,
+        dinnerStart: true,
+        dinnerEnd: true,
+        status: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        deletedAt: true,
+        otp: false,          // hide OTP info
+        otp_expiry: false,   // hide OTP expiry
+        otp_verified: false, // hide OTP verified
+        VendorBankDetail: true,
+        Meal: {
+          where: {
+            type: type,
+            isDeleted: false,
+            isVerified: true,
+          },
+          select: {
+            id: true,
+            title: true,
+            basePrice: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: "desc",
+        name: "asc",
       },
     });
 
     return res.status(200).json({
       success: true,
-      count: meals.length,
-      data: meals,
+      count: vendors.length,
+      data: vendors,
     });
   } catch (error) {
-    console.error("Error fetching meals by type:", error);
+    console.error("Error fetching vendors by meal type:", error);
     return res.status(500).json({
       success: false,
-      message: "Server error fetching meals.",
+      message: "Server error fetching vendors.",
     });
   }
 };
+
+
+
+
+
 
 

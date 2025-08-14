@@ -15,7 +15,7 @@ import {
   updateUserProfile,
   getUserWallet,
   getUserProfile,
-  getMealsByType
+  getVendorsByMealType
 } from "../controller/user.controller.js";
 
 import { 
@@ -58,7 +58,7 @@ router.get("/meals/vendor/:vendorId/type/:type", getMealsByVendorAndType);
 router.get("/meals/search", searchMeals);
 // Get meal details by ID
 router.get("/meals/:id", getMealById);
-router.get("/meals", getMealsByType);
+router.get("/meals", getVendorsByMealType);
 
 // CART ROUTES
 // Add meal to cart (handles both single and customizable meals)

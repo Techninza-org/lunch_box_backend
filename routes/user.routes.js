@@ -54,7 +54,7 @@ router.get("/get-restaurant-by-id/:id", getRestaurantsById);
 // Get meals by vendor and type
 router.get("/meals/vendor/:vendorId/type/:type", getMealsByVendorAndType);
 // Search meals
-router.get("/meals/search", searchMeals);
+router.get("/meals/search", searchMeals); 
 // Get meal details by ID
 router.get("/meals/:id", getMealById);
 

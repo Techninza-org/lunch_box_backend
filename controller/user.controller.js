@@ -368,13 +368,13 @@ export const searchMeals = async (req, res) => {
         {
           title: {
             contains: query,
-            mode: "insensitive",
+            // mode: "insensitive",
           },
         },
         {
           description: {
             contains: query,
-            mode: "insensitive",
+            // mode: "insensitive",
           },
         },
       ],
@@ -392,30 +392,46 @@ export const searchMeals = async (req, res) => {
     }
 
     const meals = await prisma.meal.findMany({
-      where: whereConditions,
+  where: {
+    isAvailable: true,
+    isDeleted: false,
+    OR: [
+      {
+        title: {
+          contains: query.toLowerCase(),
+        },
+      },
+      {
+        description: {
+          contains: query.toLowerCase(),
+        },
+      },
+    ],
+  },
+  include: {
+    vendor: {
+      select: {
+        id: true,
+        name: true,
+        businessName: true,
+        logo: true,
+      },
+    },
+    mealImages: true,
+    mealOptionGroups: {
       include: {
-        vendor: {
-          select: {
-            id: true,
-            name: true,
-            businessName: true,
-            logo: true,
-          },
-        },
-        mealImages: true,
-        mealOptionGroups: {
-          include: {
-            options: true,
-          },
-        },
-        availableDays: true,
-        dietaryTags: true,
-        ingredients: true,
+        options: true,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    },
+    availableDays: true,
+    dietaryTags: true,
+    ingredients: true,
+  },
+  orderBy: {
+    createdAt: "desc",
+  },
+});
+
 
     res.status(200).json({
       success: true,
@@ -767,4 +783,5 @@ export const getUserWallet = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 

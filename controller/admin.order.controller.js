@@ -499,7 +499,7 @@ export const getAdminDashboardStats = async (req, res) => {
 
     const totalOrders = await prisma.order.count({ where: dateFilter });
     const totalRevenue = await prisma.order.aggregate({
-      where: { ...dateFilter, status: "DELIVERED" },
+      where: { ...dateFilter, status: "COMPLETED" },
       _sum: { totalAmount: true },
     });
 

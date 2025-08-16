@@ -873,6 +873,81 @@ export const getVendorsByMealType = async (req, res) => {
   }
 };
 
+export const addToWishlist = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { mealId } = req.body;
+
+    if (!mealId) {
+      return res.status(400).json({ error: "mealId is required" });
+    }
+
+    // Prevent duplicates
+    const existing = await prisma.wishlist.findUnique({
+      where: { userId_mealId: { userId, mealId } },
+    });
+    if (existing) {
+      return res.status(400).json({ error: "Item already in wishlist" });
+    }
+
+    const wishlistItem = await prisma.wishlist.create({
+      data: {
+        userId,
+        mealId,
+      },
+    });
+
+    res.status(201).json({ success: true, data: wishlistItem });
+  } catch (error) {
+    console.error("Error adding to wishlist:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const removeFromWishlist = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { mealId } = req.body;
+
+    if (!mealId) {
+      return res.status(400).json({ error: "mealId is required" });
+    }
+
+    const deleted = await prisma.wishlist.deleteMany({
+      where: { userId, mealId },
+    });
+
+    if (deleted.count === 0) {
+      return res.status(404).json({ error: "Item not found in wishlist" });
+    }
+
+    res.json({ success: true, message: "Item removed from wishlist" });
+  } catch (error) {
+    console.error("Error removing from wishlist:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getUserWishlist = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const wishlist = await prisma.wishlist.findMany({
+      where: { userId },
+      include: { meal: true }, // include meal details
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ success: true, data: wishlist });
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+
+
 
 
 

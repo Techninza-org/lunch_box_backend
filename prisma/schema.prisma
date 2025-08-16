@@ -99,6 +99,8 @@ model User {
   // UserCurrentLocation UserCurrentLocation[]
 
   // WalletOrder WalletOrder[]
+
+  Wishlist Wishlist[]
 }
 
 enum UserAddressType {
@@ -347,6 +349,7 @@ model Meal {
   availableDays    MealAvailableDay[] // "MON", "TUE", etc
   cartItems        CartItem[] // cart items containing this meal
   orderItems       OrderItem[] // order items containing this meal
+  wishlists        Wishlist[] // opposite relation for Wishlist
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -731,4 +734,17 @@ model WalletOrder {
 
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  mealId    Int      // the item the user added to wishlist
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mealId]) // prevents duplicate entries
+  @@index([userId])
 }

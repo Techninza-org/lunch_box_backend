@@ -247,19 +247,23 @@ model UserWallet {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+  transactions UserWalletTransaction[]
 }
 
 model UserWalletTransaction {
   id        Int                   @id @default(autoincrement())
   userId    Int
+  walletId  Int                   // Link to UserWallet
   amount    Float
-  type      WalletTransactionType
+  type      WalletTransactionType // CREDIT | DEBIT
   paymentId String?               @unique
   createdAt DateTime              @default(now())
   updatedAt DateTime              @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user   User       @relation(fields: [userId], references: [id])
+  wallet UserWallet @relation(fields: [walletId], references: [id])
 }
+
 
 model Settings {
   id                        Int   @id @default(autoincrement())

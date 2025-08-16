@@ -280,6 +280,13 @@ export const userRegister = async (req, res) => {
       },
     });
 
+    await prisma.userWallet.create({
+      data: {
+        userId: newUser.id,
+        balance: 0,
+      },
+    });
+
     // Generate JWT token
     const token = jwt.sign(
       { id: newUser.id, role: "USER" },
@@ -896,7 +903,9 @@ export const deliveryForgotPassword = async (req, res) => {
       });
     }
 
-    const deliveryPartner = await prisma.deliveryPartner.findUnique({ where: { email } });
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { email },
+    });
     if (!deliveryPartner) {
       return res.status(400).json({
         success: false,
@@ -962,7 +971,9 @@ export const deliveryVerifyOtpAndResetPassword = async (req, res) => {
       });
     }
 
-    const deliveryPartner = await prisma.deliveryPartner.findUnique({ where: { email } });
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { email },
+    });
 
     if (!deliveryPartner) {
       return res.status(404).json({

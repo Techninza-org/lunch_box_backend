@@ -97,6 +97,8 @@ model User {
   // notifications Notification[]
 
   // UserCurrentLocation UserCurrentLocation[]
+
+  // WalletOrder WalletOrder[]
 }
 
 enum UserAddressType {
@@ -239,7 +241,7 @@ model VendorWallet {
 
 model UserWallet {
   id        Int      @id @default(autoincrement())
-  userId    Int
+  userId    Int      @unique
   balance   Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -702,4 +704,27 @@ model SupportMessage {
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+}
+
+enum WalletType {
+  USER
+  VENDOR
+  DELIVERY_PARTNER
+}
+
+model WalletOrder {
+  id                Int        @id @default(autoincrement())
+  walletType        WalletType
+  walletId          Int        // points to UserWallet.id OR VendorWallet.id OR DeliveryPartnerWallet.id
+
+  razorpayOrderId   String     @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  
+  amount            Int
+  currency          String     @default("INR")
+  status            String     @default("PENDING")
+
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 }

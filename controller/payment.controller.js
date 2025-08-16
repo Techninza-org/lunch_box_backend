@@ -175,21 +175,59 @@ export const verifyVendorWalletPayment = async (req, res) => {
 
 // Create a Razorpay order for user wallet
 export const createUserWalletOrder = async (req, res) => {
-  const { amount } = req.body;
-  const userId = req.user.id; // assuming vendor is logged in
+  try {
+    const { amount } = req.body;
+    const userId = req.user?.id;
 
-  if (!amount || amount <= 0) {
-    return res.status(400).json({ error: "Invalid amount" });
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Missing user ID" });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Invalid amount" });
+    }
+
+    // ✅ Fetch user's wallet
+    const userWallet = await prisma.userWallet.findUnique({
+      where: { userId },
+    });
+
+    if (!userWallet) {
+      return res.status(404).json({ error: "User wallet not found" });
+    }
+
+    // ✅ Create Razorpay order
+    const order = await razorpay.orders.create({
+      amount: amount * 100, // paise
+      currency: "INR",
+      receipt: `user_wallet_${Date.now()}_${userId}`,
+    });
+
+    // ✅ Save order in walletOrder
+    const walletOrder = await prisma.walletOrder.create({
+      data: {
+        walletType: "USER",
+        walletId: userWallet.id, // 👈 link to userWallet.id
+        razorpayOrderId: order.id,
+        amount,
+        currency: "INR",
+        status: "PENDING",
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      walletOrderId: walletOrder.id,
+    });
+  } catch (error) {
+    console.error("Error creating user wallet order:", error);
+    return res.status(500).json({ error: "Failed to create wallet order" });
   }
-
-  const order = await razorpay.orders.create({
-    amount: amount * 100,
-    currency: "INR",
-    receipt: `vendor_wallet_${Date.now()}_${userId}`,
-  });
-
-  res.json({ success: true, orderId: order.id });
 };
+
 
 export const verifyUserWalletPayment = async (req, res) => {
   const {
@@ -208,13 +246,26 @@ export const verifyUserWalletPayment = async (req, res) => {
     .digest("hex");
 
   if (expectedSignature !== razorpay_signature) {
+    await prisma.walletOrder.updateMany({
+      where: { razorpayOrderId: razorpay_order_id, userId },
+      data: { status: "FAILED" },
+    });
     return res.status(400).json({ error: "Invalid payment signature" });
   }
 
-  // ✅ Payment is verified — use transaction to ensure consistency
+  // ✅ Payment is verified — use transaction
   await prisma.$transaction(async (tx) => {
-    
-    // 1. Add transaction entry
+    // 1. Update wallet order as SUCCESS
+    await tx.walletOrder.updateMany({
+      where: { razorpayOrderId: razorpay_order_id, userId },
+      data: {
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        status: "SUCCESS",
+      },
+    });
+
+    // 2. Add transaction entry
     await tx.userWalletTransaction.create({
       data: {
         userId,
@@ -223,18 +274,15 @@ export const verifyUserWalletPayment = async (req, res) => {
       },
     });
 
-    // 2. Update wallet balance
+    // 3. Update wallet balance
     await tx.userWallet.update({
       where: { userId },
-      data: {
-        balance: {
-          increment: amount,
-        },
-      },
+      data: { balance: { increment: amount } },
     });
   });
 
   res.json({ success: true, message: "Wallet credited successfully" });
 };
+
 
 

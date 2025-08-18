@@ -18,7 +18,8 @@ import {
   getVendorsByMealType,
   addToWishlist,
   removeFromWishlist,
-  getUserWishlist
+  getUserWishlist,
+  getFilteredMeals
 } from "../controller/user.controller.js";
 
 import { 
@@ -62,6 +63,7 @@ router.get("/meals/search", searchMeals);
 // Get meal details by ID
 router.get("/meals/:id", getMealById);
 router.get("/meals", getVendorsByMealType);
+router.get("/get-filtered-meals/:vendorId", getFilteredMeals);
 
 // CART ROUTES
 // Add meal to cart (handles both single and customizable meals)
@@ -105,6 +107,7 @@ router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSuppo
 router.post("/add-user-wishlist", addToWishlist);
 router.delete("/remove-user-wishlist", removeFromWishlist);
 router.get("/get-all-user-wishlist", getUserWishlist);
+
 
 
 

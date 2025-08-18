@@ -392,46 +392,45 @@ export const searchMeals = async (req, res) => {
     }
 
     const meals = await prisma.meal.findMany({
-  where: {
-    isAvailable: true,
-    isDeleted: false,
-    OR: [
-      {
-        title: {
-          contains: query.toLowerCase(),
-        },
+      where: {
+        isAvailable: true,
+        isDeleted: false,
+        OR: [
+          {
+            title: {
+              contains: query.toLowerCase(),
+            },
+          },
+          {
+            description: {
+              contains: query.toLowerCase(),
+            },
+          },
+        ],
       },
-      {
-        description: {
-          contains: query.toLowerCase(),
-        },
-      },
-    ],
-  },
-  include: {
-    vendor: {
-      select: {
-        id: true,
-        name: true,
-        businessName: true,
-        logo: true,
-      },
-    },
-    mealImages: true,
-    mealOptionGroups: {
       include: {
-        options: true,
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            logo: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: {
+            options: true,
+          },
+        },
+        availableDays: true,
+        dietaryTags: true,
+        ingredients: true,
       },
-    },
-    availableDays: true,
-    dietaryTags: true,
-    ingredients: true,
-  },
-  orderBy: {
-    createdAt: "desc",
-  },
-});
-
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
     res.status(200).json({
       success: true,
@@ -837,8 +836,8 @@ export const getVendorsByMealType = async (req, res) => {
         createdAt: true,
         updatedAt: true,
         deletedAt: true,
-        otp: false,          // hide OTP info
-        otp_expiry: false,   // hide OTP expiry
+        otp: false, // hide OTP info
+        otp_expiry: false, // hide OTP expiry
         otp_verified: false, // hide OTP verified
         VendorBankDetail: true,
         Meal: {
@@ -945,12 +944,69 @@ export const getUserWishlist = async (req, res) => {
   }
 };
 
+export const getFilteredMeals = async (req, res) => {
+  try {
+    const vendorId = parseInt(req.params.vendorId);
 
+    if (!vendorId) {
+      return res.status(400).json({ success: false, message: "Vendor ID required" });
+    }
 
+    const { isVeg, cuisine, sort } = req.query; 
+    // Example: ?isVeg=true&cuisine=Indian&sort=price_desc
 
+    // Build filter conditions
+    const filters = {
+      vendorId,
+      isDeleted: false,
+      isAvailable: true,
+    };
 
+    if (isVeg !== undefined) {
+      filters.isVeg = isVeg === "true";
+    }
 
+    if (cuisine) {
+      filters.cuisine = { contains: cuisine, mode: "insensitive" };
+    }
 
+    // Handle sorting
+    let orderBy = { createdAt: "desc" }; // default
+    if (sort === "price_asc") {
+      orderBy = { basePrice: "asc" };
+    } else if (sort === "price_desc") {
+      orderBy = { basePrice: "desc" };
+    }
 
+    // Fetch meals with relations
+    const meals = await prisma.meal.findMany({
+      where: filters,
+      include: {
+        mealImages: true,
+        mealOptionGroups: true,
+        dietaryTags: true,
+        ingredients: true,
+        availableDays: true,
+      },
+      orderBy,
+    });
 
+    // Split into breakfast, lunch, dinner
+    const breakfast = meals.filter((meal) => meal.type === "Breakfast");
+    const lunch = meals.filter((meal) => meal.type === "Lunch");
+    const dinner = meals.filter((meal) => meal.type === "Dinner");
 
+    res.json({
+      success: true,
+      data: {
+        breakfast,
+        lunch,
+        dinner,
+        all: meals,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getFilteredMeals:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

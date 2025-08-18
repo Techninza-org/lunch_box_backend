@@ -967,7 +967,9 @@ export const getFilteredMeals = async (req, res) => {
     }
 
     if (cuisine) {
-      filters.cuisine = { contains: cuisine, mode: "insensitive" };
+      filters.cuisine = { contains: cuisine, 
+        // mode: "insensitive" 
+      };
     }
 
     // Handle sorting

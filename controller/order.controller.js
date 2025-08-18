@@ -18,6 +18,7 @@ export const createOrder = async (req, res) => {
       deliveryAddressId,
       subscriptionStartDate,
       orderNotes,
+      walletTransactionId
     } = req.body;
 
     // Validate required fields
@@ -141,6 +142,7 @@ export const createOrder = async (req, res) => {
           subscriptionEndDate: subscriptionEndDate,
           totalMealsInSubscription: totalMealsInSubscription,
           orderNotes: orderNotes,
+          walletTransactionId: walletTransactionId || null,
         },
       });
 

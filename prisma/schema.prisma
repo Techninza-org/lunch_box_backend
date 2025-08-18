@@ -248,14 +248,14 @@ model UserWallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user         User                    @relation(fields: [userId], references: [id])
   transactions UserWalletTransaction[]
 }
 
 model UserWalletTransaction {
   id        Int                   @id @default(autoincrement())
   userId    Int
-  walletId  Int                   // Link to UserWallet
+  walletId  Int // Link to UserWallet
   amount    Float
   type      WalletTransactionType // CREDIT | DEBIT
   paymentId String?               @unique
@@ -265,7 +265,6 @@ model UserWalletTransaction {
   user   User       @relation(fields: [userId], references: [id])
   wallet UserWallet @relation(fields: [walletId], references: [id])
 }
-
 
 model Settings {
   id                        Int   @id @default(autoincrement())
@@ -504,9 +503,10 @@ model Order {
   totalAmount     Float // final amount after all calculations
 
   // Payment
-  paymentType   PaymentType
-  paymentId     String? // external payment gateway ID
-  paymentStatus PaymentStatus @default(PENDING)
+  paymentType         PaymentType
+  paymentId           String? // external payment gateway ID
+  paymentStatus       PaymentStatus @default(PENDING)
+  walletTransactionId Int? // if paid via wallet
 
   // Delivery Address (stored to preserve data)
   deliveryAddress String
@@ -703,7 +703,7 @@ model SupportMessage {
   id         Int         @id @default(autoincrement())
   ticketId   Int
   senderRole SupportRole // USER, VENDOR, DELIVERY_PARTNER, ADMIN
-  senderId   Int // ID of the sender (admin/user/vendor/deliveryPartner) 
+  senderId   Int // ID of the sender (admin/user/vendor/deliveryPartner)
   message    String
   // attachmentUrl String?     // optional file/image
   createdAt  DateTime    @default(now())
@@ -720,26 +720,26 @@ enum WalletType {
 }
 
 model WalletOrder {
-  id                Int        @id @default(autoincrement())
-  walletType        WalletType
-  walletId          Int        // points to UserWallet.id OR VendorWallet.id OR DeliveryPartnerWallet.id
+  id         Int        @id @default(autoincrement())
+  walletType WalletType
+  walletId   Int // points to UserWallet.id OR VendorWallet.id OR DeliveryPartnerWallet.id
 
-  razorpayOrderId   String     @unique
+  razorpayOrderId   String  @unique
   razorpayPaymentId String?
   razorpaySignature String?
-  
-  amount            Int
-  currency          String     @default("INR")
-  status            String     @default("PENDING")
 
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  amount   Int
+  currency String @default("INR")
+  status   String @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Wishlist {
   id        Int      @id @default(autoincrement())
   userId    Int
-  mealId    Int      // the item the user added to wishlist
+  mealId    Int // the item the user added to wishlist
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

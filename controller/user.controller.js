@@ -1012,3 +1012,65 @@ export const getFilteredMeals = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+export const createDebitTransaction = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { amount } = req.body;
+
+    if (!userId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "userId and amount are required",
+      });
+    }
+
+    // Find wallet
+    const wallet = await prisma.userWallet.findUnique({
+      where: { userId },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found",
+      });
+    }
+
+    // Check balance
+    if (wallet.balance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient wallet balance",
+      });
+    }
+
+    // Update wallet balance
+    const updatedWallet = await prisma.userWallet.update({
+      where: { id: wallet.id },
+      data: { balance: wallet.balance - amount },
+    });
+
+    // Create debit transaction
+    const transaction = await prisma.userWalletTransaction.create({
+      data: {
+        userId,
+        walletId: wallet.id,
+        amount,
+        type: "DEBIT",
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Wallet debited successfully",
+      data: {
+        wallet: updatedWallet,
+        transaction,
+      },
+    });
+  } catch (error) {
+    console.error("Error in createDebitTransaction:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};  

@@ -19,7 +19,8 @@ import {
   addToWishlist,
   removeFromWishlist,
   getUserWishlist,
-  getFilteredMeals
+  getFilteredMeals,
+  createDebitTransaction
 } from "../controller/user.controller.js";
 
 import { 
@@ -96,6 +97,7 @@ router.post("/verify-payment", verifyRazorpayPayment);
 router.post("/create-user-wallet-order", createUserWalletOrder);
 router.post("/verify-user-wallet", verifyUserWalletPayment);
 router.get("/get-user-wallet", getUserWallet);
+router.post("/debit-user-wallet", createDebitTransaction);
 
 
 // Support routes

@@ -14,15 +14,17 @@ datasource db {
 }
 
 model Admin {
-  id           Int       @id @default(autoincrement())
-  name         String
-  email        String    @unique
-  password     String
-  otp          String?   @db.VarChar(100)
-  otp_expiry   DateTime? @db.DateTime
-  otp_verified Boolean?  @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  email                  String                   @unique
+  password               String
+  otp                    String?                  @db.VarChar(100)
+  otp_expiry             DateTime?                @db.DateTime
+  otp_verified           Boolean?                 @default(false)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  AdminWallet            AdminWallet?
+  AdminWalletTransaction AdminWalletTransaction[]
 }
 
 model DeliveryPartner {
@@ -250,8 +252,8 @@ model UserWallet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user                      User                        @relation(fields: [userId], references: [id])
-  transactions              UserWalletTransaction[]
+  user         User                    @relation(fields: [userId], references: [id])
+  transactions UserWalletTransaction[]
 }
 
 model UserWalletTransaction {
@@ -289,8 +291,33 @@ model DeliveryWalletTransaction {
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
 
-  deliveryPartner  DeliveryPartner @relation(fields: [deliveryId], references: [id])
-  deliveryWallet   DeliveryWallet? @relation(fields: [walletId], references: [id])
+  deliveryPartner DeliveryPartner @relation(fields: [deliveryId], references: [id])
+  deliveryWallet  DeliveryWallet? @relation(fields: [walletId], references: [id])
+}
+
+model AdminWallet {
+  id        Int      @id @default(autoincrement())
+  adminId   Int      @unique
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admin        Admin                    @relation(fields: [adminId], references: [id])
+  transactions AdminWalletTransaction[]
+}
+
+model AdminWalletTransaction {
+  id        Int                   @id @default(autoincrement())
+  adminId   Int
+  walletId  Int // Link to UserWallet
+  amount    Float
+  type      WalletTransactionType // CREDIT | DEBIT
+  paymentId String?               @unique
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  admin       Admin        @relation(fields: [adminId], references: [id])
+  adminWallet AdminWallet? @relation(fields: [walletId], references: [id])
 }
 
 model Settings {

@@ -114,8 +114,21 @@ export const createVendorWalletOrder = async (req, res) => {
   const { amount } = req.body;
   const vendorId = req.user.id; // assuming vendor is logged in
 
+  if (!vendorId) {
+    return res.status(401).json({ error: "Unauthorized: Missing vendor ID" });
+  }
+
   if (!amount || amount <= 0) {
     return res.status(400).json({ error: "Invalid amount" });
+  }
+
+  // ✅ Fetch user's wallet
+  const vendorWallet = await prisma.vendorWallet.findUnique({
+    where: { vendorId },
+  });
+
+  if (!vendorWallet) {
+    return res.status(404).json({ error: "Vendor wallet not found" });
   }
 
   const order = await razorpay.orders.create({
@@ -124,53 +137,99 @@ export const createVendorWalletOrder = async (req, res) => {
     receipt: `vendor_wallet_${Date.now()}_${vendorId}`,
   });
 
-  res.json({ success: true, orderId: order.id });
+  // ✅ Save order in walletOrder
+  const walletOrder = await prisma.walletOrder.create({
+    data: {
+      walletType: "VENDOR",
+      walletId: vendorWallet.id, // 👈 link to vendorWallet.id
+      razorpayOrderId: order.id,
+      amount,
+      currency: "INR",
+      status: "PENDING",
+    },
+  });
+
+  return res.status(201).json({
+    success: true,
+    orderId: order.id,
+    amount: order.amount,
+    currency: order.currency,
+    walletOrderId: walletOrder.id,
+  });
 };
 
 export const verifyVendorWalletPayment = async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    amount,
-  } = req.body;
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      amount,
+    } = req.body;
 
-  const vendorId = req.user.id;
+    const vendorId = req.user.id;
 
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(body.toString())
-    .digest("hex");
-
-  if (expectedSignature !== razorpay_signature) {
-    return res.status(400).json({ error: "Invalid payment signature" });
-  }
-
-  // ✅ Payment is verified — use transaction to ensure consistency
-  await prisma.$transaction(async (tx) => {
-    
-    // 1. Add transaction entry
-    await tx.vendorWalletTransaction.create({
-      data: {
-        vendorId,
-        amount,
-        type: "CREDIT",
+    // 1️⃣ Find the wallet order for this user
+    const walletOrder = await prisma.walletOrder.findFirst({
+      where: {
+        razorpayOrderId: razorpay_order_id,
+        walletType: "VENDOR",
       },
     });
 
-    // 2. Update wallet balance
-    await tx.vendorWallet.update({
-      where: { vendorId },
-      data: {
-        balance: {
-          increment: amount,
+    if (!walletOrder) {
+      return res.status(404).json({ error: "Wallet order not found." });
+    }
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      await prisma.walletOrder.update({
+        where: { id: walletOrder.id },
+        data: { status: "FAILED" },
+      });
+      return res.status(400).json({ error: "Invalid payment signature" });
+    }
+
+    // 3️⃣ Payment verified — perform transaction
+    await prisma.$transaction(async (tx) => {
+      // Update wallet order
+      await tx.walletOrder.update({
+        where: { id: walletOrder.id },
+        data: {
+          razorpayPaymentId: razorpay_payment_id,
+          razorpaySignature: razorpay_signature,
+          status: "SUCCESS",
         },
-      },
-    });
-  });
+      });
 
-  res.json({ success: true, message: "Wallet credited successfully" });
+      // Update wallet balance
+      await tx.vendorWallet.update({
+        where: { id: walletOrder.walletId },
+        data: { balance: { increment: amount } },
+      });
+
+      // Create transaction record
+      await tx.vendorWalletTransaction.create({
+        data: {
+          vendorId,
+          walletId: walletOrder.walletId,
+          amount,
+          type: "CREDIT",
+          paymentId: razorpay_payment_id,
+        },
+      });
+    });
+
+    res.json({ success: true, message: "User wallet credited successfully" });
+  } catch (error) {
+    console.error("Error verifying user wallet payment:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // Create a Razorpay order for user wallet
@@ -228,10 +287,14 @@ export const createUserWalletOrder = async (req, res) => {
   }
 };
 
-
 export const verifyUserWalletPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, amount } = req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      amount,
+    } = req.body;
     const userId = req.user.id;
 
     // 1️⃣ Find the wallet order for this user
@@ -297,7 +360,3 @@ export const verifyUserWalletPayment = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
-
-
-

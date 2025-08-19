@@ -753,34 +753,6 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-export const getUserWallet = async (req, res) => {
-  try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const wallet = await prisma.userWallet.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        balance: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet not found" });
-    }
-
-    res.json({ wallet });
-  } catch (err) {
-    console.error("Error fetching wallet:", err);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
 
 export const getVendorsByMealType = async (req, res) => {
   try {

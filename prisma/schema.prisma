@@ -237,12 +237,13 @@ model VendorBankDetail {
 
 model VendorWallet {
   id        Int      @id @default(autoincrement())
-  vendorId  Int
+  vendorId  Int      @unique
   balance   Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  vendor Vendor @relation(fields: [vendorId], references: [id])
+  vendor       Vendor                    @relation(fields: [vendorId], references: [id])
+  transactions VendorWalletTransaction[]
 }
 
 model UserWallet {
@@ -344,7 +345,9 @@ model VendorWalletTransaction {
   createdAt DateTime              @default(now())
   updatedAt DateTime              @updatedAt
 
-  vendor Vendor @relation(fields: [vendorId], references: [id])
+  vendor         Vendor        @relation(fields: [vendorId], references: [id])
+  VendorWallet   VendorWallet? @relation(fields: [vendorWalletId], references: [id])
+  vendorWalletId Int?
 }
 
 // products

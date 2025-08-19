@@ -233,6 +233,35 @@ export const verifyVendorWalletPayment = async (req, res) => {
   }
 };
 
+export const getVendorWallet = async (req, res) => {
+  try {
+    const vendorId = req.user?.id;
+
+    if (!vendorId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const wallet = await prisma.vendorWallet.findUnique({
+      where: { vendorId },
+      select: {
+        id: true,
+        balance: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    res.json({ wallet });
+  } catch (err) {
+    console.error("Error fetching wallet:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 export const createVendorDebitTransaction = async (req, res) => {
   try {
     const vendorId = req.user?.id;
@@ -422,6 +451,35 @@ export const verifyUserWalletPayment = async (req, res) => {
   } catch (error) {
     console.error("Error verifying user wallet payment:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getUserWallet = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const wallet = await prisma.userWallet.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        balance: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    res.json({ wallet });
+  } catch (err) {
+    console.error("Error fetching wallet:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -617,6 +675,35 @@ export const verifyDeliveryWalletPayment = async (req, res) => {
   }
 };
 
+export const getDeliveryWallet = async (req, res) => {
+  try {
+    const deliveryId = req.user?.id;
+
+    if (!deliveryId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const wallet = await prisma.deliveryWallet.findUnique({
+      where: { deliveryId },
+      select: {
+        id: true,
+        balance: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    res.json({ wallet });
+  } catch (err) {
+    console.error("Error fetching wallet:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 export const createDeliveryDebitTransaction = async (req, res) => {
   try {
     const deliveryId = req.user?.id;
@@ -713,7 +800,7 @@ export const createAdminWalletOrder = async (req, res) => {
     // ✅ Save order in walletOrder
     const walletOrder = await prisma.walletOrder.create({
       data: {
-        walletType: "DELIVERY_",
+        walletType: "ADMIN",
         walletId: adminWallet.id, // 👈 link to userWallet.id
         razorpayOrderId: order.id,
         amount,
@@ -806,6 +893,35 @@ export const verifyAdminWalletPayment = async (req, res) => {
   } catch (error) {
     console.error("Error verifying user wallet payment:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getAdminWallet = async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+
+    if (!adminId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const wallet = await prisma.adminWallet.findUnique({
+      where: { adminId },
+      select: {
+        id: true,
+        balance: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    res.json({ wallet });
+  } catch (err) {
+    console.error("Error fetching wallet:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };
 

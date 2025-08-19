@@ -56,6 +56,13 @@ export const adminRegister = async (req, res) => {
       },
     });
 
+    await prisma.adminWallet.create({
+      data: {
+        adminId: newAdmin.id,
+        balance: 0,
+      },
+    });
+
     res
       .status(201)
       .json({ message: "Admin registered successfully", admin: newAdmin });
@@ -553,6 +560,13 @@ export const vendorRegister = async (req, res) => {
       },
     });
 
+    await prisma.vendorWallet.create({
+      data: {
+        vendorId: newVendor.id,
+        balance: 0,
+      },
+    });
+
     res
       .status(201)
       .json({ message: "Vendor registered successfully", vendor: newVendor });
@@ -822,6 +836,13 @@ export const deliveryPartnerRegister = async (req, res) => {
         email: true,
         phoneNumber: true,
         createdAt: true,
+      },
+    });
+
+    await prisma.deliveryWallet.create({
+      data: {
+        deliveryId: newPartner.id,
+        balance: 0,
       },
     });
 

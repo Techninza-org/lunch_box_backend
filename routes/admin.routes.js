@@ -47,6 +47,12 @@ import {
 import {
   sendMessageToSupportTicket
 } from "../controller/support.controller.js";
+import {
+  createAdminWalletOrder,
+  verifyAdminWalletPayment,
+  getAdminWallet,
+  createAdminDebitTransaction
+} from "../controller/payment.controller.js";
 
 // Define admin routes here
 
@@ -115,5 +121,11 @@ router.get("/dashboard-stats", getAdminDashboardStats);
 //----------Support Ticket Management---------//
 router.get("/get-all-support-tickets", getAllSupportTicketsGroupedById);
 router.post("/send-message-to-support-ticket-admin/:ticketId", sendMessageToSupportTicket);
+
+// Wallet routes
+router.post("/create-admin-wallet-order", createAdminWalletOrder);
+router.post("/verify-admin-wallet", verifyAdminWalletPayment);
+router.get("/get-admin-wallet", getAdminWallet);
+router.post("/debit-admin-wallet", createAdminDebitTransaction);
 
 export default router;

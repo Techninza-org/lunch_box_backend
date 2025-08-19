@@ -16,7 +16,14 @@ import {
   createSupportTicket,
   getSupportTickets,
   sendMessageToSupportTicket
- } from "../controller/support.controller.js";
+} from "../controller/support.controller.js";
+import { 
+  createDeliveryWalletOrder,
+  verifyDeliveryWalletPayment,
+  getDeliveryWallet,
+  createDeliveryDebitTransaction
+
+} from "../controller/payment.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
 const deliveryPartner = getMulterUpload("delivery-partners");
@@ -49,6 +56,12 @@ router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
 router.post("/create-delivery-support-ticket", createSupportTicket);
 router.get("/get-delivery-support-tickets", getSupportTickets);
 router.post("/send-message-to-support-ticket-delivery/:ticketId", sendMessageToSupportTicket);
+
+// Wallet routes
+router.post("/create-delivery-wallet-order", createDeliveryWalletOrder);
+router.post("/verify-delivery-wallet", verifyDeliveryWalletPayment);
+router.get("/get-delivery-wallet", getDeliveryWallet);
+router.post("/debit-delivery-wallet", createDeliveryDebitTransaction);
 
 
 

@@ -13,7 +13,7 @@ import {
   getAddress,
   getUserNotifications,
   updateUserProfile,
-  getUserWallet,
+  // getUserWallet,
   getUserProfile,
   getVendorsByMealType,
   addToWishlist,
@@ -43,6 +43,7 @@ import {
   verifyRazorpayPayment,
   createUserWalletOrder,
   verifyUserWalletPayment,
+  getUserWallet,
   createUserDebitTransaction
 } from "../controller/payment.controller.js";
 

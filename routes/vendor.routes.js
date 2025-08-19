@@ -40,7 +40,9 @@ import {
 
 import { 
   createVendorWalletOrder,
-  verifyVendorWalletPayment
+  verifyVendorWalletPayment,
+  getVendorWallet,
+  createVendorDebitTransaction
 } from "../controller/payment.controller.js";
  
 
@@ -88,9 +90,11 @@ router.post("/create-vendor-support-ticket", createSupportTicket);
 router.get("/get-vendor-support-tickets", getSupportTickets);
 router.post("/send-message-to-support-ticket-vendor/:ticketId", sendMessageToSupportTicket);
 
-// Payment routes
+// Wallet routes
 router.post("/create-vendor-wallet-order", createVendorWalletOrder);
 router.post("/verify-vendor-wallet", verifyVendorWalletPayment);
+router.get("/get-vendor-wallet", getVendorWallet);
+router.post("/debit-vendor-wallet", createVendorDebitTransaction);
 
 
 export default router; 

@@ -85,7 +85,11 @@ export const getSupportTickets = async (req, res) => {
 };
 
 export const sendMessageToSupportTicket = async (req, res) => {
+
   const { id: senderId, role: senderRole } = req.user;
+  
+  console.log(senderId, senderRole);
+
   const { ticketId } = req.params;
   const { message } = req.body;
 
@@ -130,3 +134,31 @@ export const sendMessageToSupportTicket = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+//status update close /open 
+
+
+export const updateSupportTicketStatus = async (req, res) => {
+  const { ticketId } = req.params;
+  const { status } = req.body;
+
+  if (!status || !["OPEN", "CLOSED"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status. Allowed values are OPEN or CLOSED." });
+  }
+
+  try {
+    const updatedTicket = await prisma.supportTicket.update({
+      where: { id: parseInt(ticketId) },
+      data: { status },
+    });
+
+    return res.status(200).json({
+      message: "Support ticket status updated successfully.",
+      data: updatedTicket,
+    });
+  } catch (error) {
+    console.error("Error updating support ticket status:", error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+

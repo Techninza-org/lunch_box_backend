@@ -108,6 +108,7 @@ router.get("/get-user-support-tickets", getSupportTickets);
 router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSupportTicket);
 
 // Wishlist routes
+
 router.post("/add-user-wishlist", addToWishlist);
 router.delete("/remove-user-wishlist", removeFromWishlist);
 router.get("/get-all-user-wishlist", getUserWishlist);

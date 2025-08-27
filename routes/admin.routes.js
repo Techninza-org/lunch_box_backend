@@ -45,7 +45,8 @@ import {
   getAdminDashboardStats,
 } from "../controller/admin.order.controller.js";
 import {
-  sendMessageToSupportTicket
+  sendMessageToSupportTicket,
+  updateSupportTicketStatus
 } from "../controller/support.controller.js";
 import {
   createAdminWalletOrder,
@@ -112,20 +113,24 @@ router.get("/get-all-notifications", getAllNotifications);
 router.get("/orders", getAllOrdersAdmin);
 router.get("/orders/:orderId", getOrderByIdAdmin);
 router.patch("/orders/:orderId/status", updateOrderStatusAdmin);
-router.patch(
-  "/orders/:orderId/assign-delivery-partner",
+router.patch("/orders/:orderId/assign-delivery-partner",
   assignDeliveryPartnerAdmin
 );
 router.get("/dashboard-stats", getAdminDashboardStats);
 
 //----------Support Ticket Management---------//
+
 router.get("/get-all-support-tickets", getAllSupportTicketsGroupedById);
 router.post("/send-message-to-support-ticket-admin/:ticketId", sendMessageToSupportTicket);
+router.patch("/update-support-ticket-status/:ticketId", updateSupportTicketStatus);
 
 // Wallet routes
+
 router.post("/create-admin-wallet-order", createAdminWalletOrder);
 router.post("/verify-admin-wallet", verifyAdminWalletPayment);
 router.get("/get-admin-wallet", getAdminWallet);
 router.post("/debit-admin-wallet", createAdminDebitTransaction);
+
+
 
 export default router;

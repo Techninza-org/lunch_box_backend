@@ -1,0 +1,58 @@
+LunchBox Backend: Vendor & Vendor Order Controllers Overview
+===============================================================
+
+Date: August 26, 2025
+
+---
+
+This document provides a detailed explanation of the vendor-related controllers in the LunchBox backend project. It is intended for backend developers onboarding to the project.
+
+
+1. vendor.controller.js
+-----------------------
+This controller manages all vendor-related operations:
+
+- **Vendor Registration & Authentication:** Handles vendor sign-up, login, and profile management.
+- **Vendor Profile Management:** Allows vendors to update business details, contact info, and profile settings.
+- **Menu/Meal Management:** Enables vendors to add, update, or remove meals/tiffins they offer.
+- **Order Handling:** May include endpoints for vendors to view orders placed for their meals.
+- **Schedule & Availability:** Vendors can set meal schedules, availability, and delivery slots.
+- **Notifications:** Sends updates to vendors about new orders, cancellations, or other important events.
+
+Typical API Endpoints:
+- POST /vendor/register — Register a new vendor
+- POST /vendor/login — Vendor login
+- GET /vendor/profile — Get vendor profile
+- PUT /vendor/profile — Update vendor profile
+- POST /vendor/meals — Add a new meal
+- PUT /vendor/meals/:id — Update a meal
+- DELETE /vendor/meals/:id — Remove a meal
+
+
+2. vendor.order.controller.js
+-----------------------------
+This controller is focused on vendor-specific order management:
+
+- **Order Listing:** Vendors can view all orders placed for their meals, filter by status, and see order details.
+- **Order Status Updates:** Allows vendors to update the status of an order (accept, reject, deliver).
+- **Order History:** Vendors can access historical data about completed or cancelled orders.
+- **Order Details:** Provides detailed information about each order, including customer info, delivery address, meal details, and payment status.
+- **Reporting:** May include endpoints for generating sales reports, daily/weekly summaries, etc.
+
+Typical API Endpoints:
+- GET /vendor/orders — List all orders for the vendor
+- GET /vendor/orders/:id — Get details of a specific order
+- PUT /vendor/orders/:id/status — Update order status
+- GET /vendor/orders/history — Get order history
+- GET /vendor/orders/report — Get sales report
+
+
+Controller Interaction
+----------------------
+- `vendor.controller.js` manages vendor business and profile.
+- `vendor.order.controller.js` manages orders received by vendors.
+- Both interact with models like Vendor, Order, Meal, and User.
+- Middleware is used for authentication and authorization.
+
+
+If you need a breakdown of specific functions or code logic, please request a code summary.

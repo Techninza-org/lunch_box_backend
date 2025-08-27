@@ -36,6 +36,7 @@ export const adminAuth = (req, res, next) => {
 };
 
 // 🧑‍💼 Vendor middleware
+
 export const vendorAuth = (req, res, next) => {
   try {
     const payload = verifyToken(req);

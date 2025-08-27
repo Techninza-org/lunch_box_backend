@@ -30,6 +30,8 @@ import {
   getVendorNotifications,
   searchMeals,
   getVendorOrderInsights,
+  getVendorStats,
+  getVendorPerformanceStats,
 } from "../controller/vendor.controller.js";
 
 import { 
@@ -96,5 +98,8 @@ router.post("/verify-vendor-wallet", verifyVendorWalletPayment);
 router.get("/get-vendor-wallet", getVendorWallet);
 router.post("/debit-vendor-wallet", createVendorDebitTransaction);
 
+//vendor stats
+router.get("/get-vendor-stats", getVendorStats);
+router.get("/performance-stats", getVendorPerformanceStats);
 
 export default router; 

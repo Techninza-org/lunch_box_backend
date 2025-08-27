@@ -167,7 +167,7 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
 export const getRestaurantsById = async (req, res) => {
   try {
     const { id } = req.params;
-
+console.log(id);
     if (!id) {
       return res.status(400).json({
         success: false,

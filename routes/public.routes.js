@@ -40,7 +40,8 @@ router.post("/user-forgot-password", userForgotPassword);
 router.post("/user-otp-verify", userVerifyOtpAndResetPassword);
 
 //vendor routes
-router.post("/vendor-register", logoUpload.single("logo"), vendorRegister);
+// Expect fields: logo, document1, document2, document3, document4
+router.post("/vendor-register", logoUpload.any(), vendorRegister);
 router.post("/vendor-login", vendorLogin);
 router.post("/vendor-forgot-password", vendorForgotPassword);
 router.post("/vendor-otp-verify", vendorVerifyOtpAndResetPassword);

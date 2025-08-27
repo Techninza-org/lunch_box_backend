@@ -183,6 +183,11 @@ model Vendor {
   gallery      String? // Comma-separated image URLs or use a related model
   description  String?
   phoneNumber2 String?
+  // KYC / compliance documents
+  document1   String?
+  document2   String?
+  document3   String?
+  document4   String?
 
   // Address
   address   String?

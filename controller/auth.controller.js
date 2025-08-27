@@ -492,6 +492,7 @@ export const userVerifyOtpAndResetPassword = async (req, res) => {
 
 // vendor registration
 export const vendorRegister = async (req, res) => {
+  const filesByField = indexFiles(req.files);
   const {
     name,
     email,
@@ -504,11 +505,17 @@ export const vendorRegister = async (req, res) => {
     city,
     state,
   } = req.body;
-  const logo = req.file ? req.file.filename : null;
-  console.log(logo);
+
+  const logo = filesByField["logo"]?.[0]?.filename || null;
+  const doc1 = filesByField["document1"]?.[0]?.filename || null;
+  const doc2 = filesByField["document2"]?.[0]?.filename || null;
+  const doc3 = filesByField["document3"]?.[0]?.filename || null;
+  const doc4 = filesByField["document4"]?.[0]?.filename || null;
+
   if (!logo) {
     return res.status(400).json({ message: "Logo is required" });
   }
+  // Documents are now optional; they can be uploaded later via a separate update endpoint.
 
   if (!name || !email || !password || !businessName || !phoneNumber) {
     return res.status(400).json({
@@ -518,12 +525,15 @@ export const vendorRegister = async (req, res) => {
   }
   try {
     // Check if vendor already exists
-    const existingVendor = await prisma.vendor.findUnique({
-      where: { email, phoneNumber },
+    const existingVendorByEmail = await prisma.vendor.findUnique({
+      where: { email },
       select: { id: true },
     });
-
-    if (existingVendor) {
+    const existingVendorByPhone = await prisma.vendor.findFirst({
+      where: { phoneNumber },
+      select: { id: true },
+    });
+    if (existingVendorByEmail || existingVendorByPhone) {
       return res
         .status(409)
         .json({ message: "Vendor email or phone number already exists" });
@@ -545,7 +555,11 @@ export const vendorRegister = async (req, res) => {
         address,
         city,
         state,
-        logo: `uploads/vendors/${logo}`, // Store logo path
+        logo: `uploads/vendors/${logo}`,
+        document1: `uploads/vendors/${doc1}`,
+        document2: `uploads/vendors/${doc2}`,
+        document3: `uploads/vendors/${doc3}`,
+        document4: `uploads/vendors/${doc4}`,
         isActive: false, // Default to inactive
         status: "PENDING", // Default status
       },
@@ -579,6 +593,8 @@ export const vendorRegister = async (req, res) => {
 // vendor login
 export const vendorLogin = async (req, res) => {
   const { email, password } = req.body;
+
+  console.log(email, password);
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });

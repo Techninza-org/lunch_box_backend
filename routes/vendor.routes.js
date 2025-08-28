@@ -20,6 +20,7 @@ import {
   getVendorOrderById,
   updateVendorOrderStatus,
   getVendorDashboardStats,
+  updateOrderScheduleStatus,
 } from "../controller/vendor.order.controller.js";
 import {
   updateVendorProfile,
@@ -46,6 +47,7 @@ import {
   getVendorWallet,
   createVendorDebitTransaction
 } from "../controller/payment.controller.js";
+import { updateOrderStatusAdmin } from "../controller/admin.order.controller.js";
  
 
 const upload = getMulterUpload("meals");
@@ -64,6 +66,7 @@ router.get("/search-meals", searchMeals);
 router.get("/orders", getVendorOrders);
 router.get("/orders/:orderId", getVendorOrderById);
 router.patch("/orders/:orderId/status", updateVendorOrderStatus);
+router.patch("/update-schedulesorders-status/:orderId", updateOrderScheduleStatus);
 router.get("/get-order-insights", getVendorOrderInsights);
 
 // Schedule management routes

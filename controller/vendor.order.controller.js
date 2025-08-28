@@ -390,7 +390,7 @@ export const getVendorDashboardStats = async (req, res) => {
     const totalMonthlyRevenue = await prisma.order.aggregate({
       where: {
         vendorId: vendorId,
-        status: "DELIVERED",
+        status: "COMPLETED",
         createdAt: {
           gte: monthStart,
           lte: monthEnd,
@@ -456,3 +456,101 @@ export const getVendorDashboardStats = async (req, res) => {
     });
   }
 };
+
+
+
+
+//update vendor order schedule status
+
+
+
+export const updateOrderScheduleStatus = async (req, res) => {
+  try {
+    const vendorId = req.user.id;
+    const { orderId } = req.params;
+    const { scheduleId, status } = req.body;
+
+    if (scheduleId === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: "scheduleId is required in request body",
+      });
+    }
+
+    const allowedStatuses = [
+      "SCHEDULED",
+      "PREPARED",
+      "OUT_FOR_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+      "MISSED",
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid schedule status",
+        allowedStatuses,
+      });
+    }
+
+    const numericOrderId = Number(orderId);
+    const numericScheduleId = Number(scheduleId);
+
+    if (isNaN(numericOrderId) || isNaN(numericScheduleId)) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId (param) and scheduleId (body) must be numbers",
+      });
+    }
+
+    const schedule = await prisma.mealSchedule.findFirst({
+      where: {
+        id: numericScheduleId,
+        orderId: numericOrderId,
+        vendorId: vendorId,
+      },
+      select: { id: true, status: true, orderId: true },
+    });
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: "Schedule not found for this vendor/order",
+      });
+    }
+
+    const updatedSchedule = await prisma.mealSchedule.update({
+      where: { id: numericScheduleId },
+      data: { status },
+    });
+
+    if (status === "DELIVERED") {
+      const notDeliveredCount = await prisma.mealSchedule.count({
+        where: {
+          orderId: numericOrderId,
+          status: { not: "DELIVERED" },
+        },
+      });
+      if (notDeliveredCount === 0) {
+        await prisma.order.update({
+          where: { id: numericOrderId },
+          data: { status: "COMPLETED" },
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updatedSchedule,
+    });
+  } catch (error) {
+    console.error("Error updating meal schedule status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+

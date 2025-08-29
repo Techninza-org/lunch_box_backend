@@ -117,7 +117,7 @@ export const addVendorMeal = async (req, res) => {
           isRequired: grp.isRequired, // Is selection required
           minSelect: grp.minSelect, // Minimum options to select
           maxSelect: grp.maxSelect, // Maximum options to select
-          // Step 8a: Add options for this group
+          
           options: {
             create: grp.options.map((opt, oIdx) => {
               // Option image fieldname: option_{groupIndex}_{optionIndex}

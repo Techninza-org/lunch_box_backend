@@ -35,6 +35,9 @@ import {
   toggleMealAvailability,
   getAllNotifications,
   getAllSupportTicketsGroupedById,
+  getAllAdmin,
+  softdeleteAdmin,
+
 
 } from "../controller/admin.controller.js";
 import {
@@ -56,6 +59,9 @@ import {
 } from "../controller/payment.controller.js";
 
 // Define admin routes here
+
+router.get("/get-all-admins", getAllAdmin);
+router.delete("/soft-delete-admin/:id", softdeleteAdmin);
 
 // Banner CRUD routes
 router.post(
@@ -84,6 +90,7 @@ router.get("/get-pending-vendors", getAllVendorsWithPendingStatus);
 router.get("/get-vendor-by-id/:id", getVendorById);
 router.put("/update-vendor/:id", updateVendor);
 router.patch("/update-vendor-status/:id", updateVendorStatus);
+
 router.get("/get-vendor-meals/:id", getMealsByVendorId);
 router.patch("/verify-vendor-meal/:id", toggleVerifyMeal);
 router.patch("/soft-delete-vendor/:id", toggleSoftDeleteVendor);

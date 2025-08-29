@@ -19,16 +19,54 @@ function indexFiles(files) {
 
 // admin registration
 export const adminRegister = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, permission, permissions, subname, subName } = req.body;
 
+  // Only required: name, email, password
   if (!name || !email || !password) {
-    return res
-      .status(400)
-      .json({ message: "Name, email, and password are required" });
+    return res.status(400).json({
+      message: "Name, email, and password are required",
+    });
   }
 
+  // Optional permissions (accept 'permission' or 'permissions')
+  let rawPermissions = permissions !== undefined ? permissions : permission;
+  let normalizedPermissions = [];
+
+  if (rawPermissions !== undefined) {
+    normalizedPermissions = rawPermissions;
+    if (typeof normalizedPermissions === "string") {
+      try {
+        const maybeJson = JSON.parse(normalizedPermissions);
+        if (Array.isArray(maybeJson) || typeof maybeJson === "object") {
+          normalizedPermissions = maybeJson;
+        }
+      } catch {
+        // keep original string
+      }
+    }
+    if (
+      typeof normalizedPermissions === "string" &&
+      normalizedPermissions.includes(",")
+    ) {
+      normalizedPermissions = normalizedPermissions
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+    }
+    if (typeof normalizedPermissions === "string") {
+      normalizedPermissions = [normalizedPermissions];
+    }
+  }
+
+  // Optional subName (accept 'subName' or 'subname')
+  const finalSubName =
+    subName !== undefined
+      ? subName
+      : subname !== undefined
+      ? subname
+      : null;
+
   try {
-    // Check if admin already exists
     const existingAdmin = await prisma.admin.findUnique({
       where: { email },
       select: { id: true },
@@ -38,20 +76,22 @@ export const adminRegister = async (req, res) => {
       return res.status(409).json({ message: "Admin already exists" });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create new admin
     const newAdmin = await prisma.admin.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        permissions: normalizedPermissions, // empty array if not provided
+        subName: finalSubName, // null if not provided
       },
       select: {
         id: true,
         name: true,
         email: true,
+        permissions: true,
+        subName: true,
         createdAt: true,
       },
     });
@@ -63,14 +103,16 @@ export const adminRegister = async (req, res) => {
       },
     });
 
-    res
-      .status(201)
-      .json({ message: "Admin registered successfully", admin: newAdmin });
+    res.status(201).json({
+      message: "Admin registered successfully",
+      admin: newAdmin,
+    });
   } catch (error) {
     console.error("Error registering admin:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // admin login
 export const adminLogin = async (req, res) => {

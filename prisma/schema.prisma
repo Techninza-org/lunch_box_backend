@@ -16,11 +16,14 @@ datasource db {
 model Admin {
   id                     Int                      @id @default(autoincrement())
   name                   String
+  subName                String?
   email                  String                   @unique
   password               String
   otp                    String?                  @db.VarChar(100)
   otp_expiry             DateTime?                @db.DateTime
   otp_verified           Boolean?                 @default(false)
+  permissions            Json?
+  isDeleted              Boolean                  @default(false)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   AdminWallet            AdminWallet?
@@ -379,6 +382,7 @@ enum MealType {
 // }
 
 // MEAL
+
 model Meal {
   id          Int            @id @default(autoincrement())
   vendorId    Int
@@ -391,8 +395,10 @@ model Meal {
   isVeg       Boolean // true/false
 
   // Nutrition Info
+
   energyKcal  Int? // e.g. 500
   proteinGram Float? // e.g. 20.5
+
   fatGram     Float?
   fiberGram   Float?
   carbsGram   Float?
@@ -418,6 +424,8 @@ model Meal {
   isVerified Boolean   @default(false) // for vendor verification
   deletedAt  DateTime? // soft delete timestamp
 }
+
+
 
 model MealAvailableDay {
   id     Int    @id @default(autoincrement())

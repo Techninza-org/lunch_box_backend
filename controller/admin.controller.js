@@ -1,6 +1,63 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+
+// -------admin section--------
+
+// Get all admins
+export const getAllAdmin = async (req, res) => {
+  try {
+    const admins = await prisma.admin.findMany({
+      where: { isDeleted: false },
+      orderBy: { id: 'asc' },
+    });
+
+    const sanitized = admins.map(({ password, otp, otp_expiry, ...rest }) => rest);
+
+    res.status(200).json({ success: true, data: sanitized });
+  } catch (error) {
+    console.error("Error fetching admins:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+export const softdeleteAdmin = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ success: false, message: "Invalid admin ID" });
+    }
+
+    const admin = await prisma.admin.findUnique({ where: { id } });
+
+    if (!admin) {
+      return res.status(404).json({ success: false, message: "Admin not found" });
+    }
+
+    const updated = await prisma.admin.update({
+      where: { id },
+      data: {
+        isDeleted: !admin.isDeleted,
+      },
+    });
+
+    // Remove sensitive fields before sending
+    const { password, otp, otp_expiry, ...safeAdmin } = updated;
+
+    return res.status(200).json({
+      success: true,
+      message: `Admin has been ${safeAdmin.isDeleted ? "soft deleted" : "restored"}`,
+      data: safeAdmin,
+    });
+  } catch (error) {
+    console.error("Error toggling admin soft delete:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+
+
 export const addbanner = async (req, res) => {
   try {
     const { title, description } = req.body;
@@ -109,18 +166,63 @@ export const deleteBanner = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      include: {
-        UserAddress: true,
-      },
+    const { startDate, endDate } = req.query;
+
+    // Build where clause (only start & end date filters)
+    const where = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        const sd = new Date(startDate);
+        if (isNaN(sd)) return res.status(400).json({ error: "Invalid startDate" });
+        where.createdAt.gte = sd;
+      }
+      if (endDate) {
+        const ed = new Date(endDate);
+        if (isNaN(ed)) return res.status(400).json({ error: "Invalid endDate" });
+        ed.setHours(23, 59, 59, 999); // inclusive
+        where.createdAt.lte = ed;
+      }
+    }
+
+    // Stats (interpreting isDeleted: true = Active, false = Deactive as requested)
+    const totalUsers = await prisma.user.count({});
+    const totalActiveUsers = await prisma.user.count({ where: { isDeleted: true } });
+    const totalInactiveUsers = await prisma.user.count({ where: { isDeleted: false } });
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayRegisteredUsers = await prisma.user.count({
+      where: { createdAt: { gte: startOfToday } },
     });
 
-    // Remove password from each user object
-    const sanitizedUsers = users.map(({ password, ...rest }) => rest);
+    const users = await prisma.user.findMany({
+      where,
+      include: { UserAddress: true },
+      orderBy: { id: 'desc' },
+    });
 
-    res.json(sanitizedUsers);
+    const data = users.map(({ password, ...u }) => ({
+      ...u,
+      status: u.isDeleted ? 'ACTIVE' : 'DEACTIVE', // per instruction
+    }));
+
+    return res.json({
+      stats: {
+        totalUsers,
+        todayRegisteredUsers,
+        totalActiveUsers,
+        totalInactiveUsers,
+      },
+      filtersApplied: {
+        startDate: startDate || null,
+        endDate: endDate || null,
+      },
+      data,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch users" });
+    console.error("Error fetching users:", error);
+    return res.status(500).json({ error: "Failed to fetch users" });
   }
 };
 
@@ -212,23 +314,87 @@ export const toggleSoftDeleteUser = async (req, res) => {
 //------------------Vendor_CRUD----------------//
 
 // Get all vendors (excluding soft-deleted)
+
 export const getAllVendors = async (req, res) => {
   try {
-    const vendors = await prisma.vendor.findMany({
-      where: {
-        status: 'APPROVED', // fixed typo here
-      },
-    });
+    const { startDate, endDate } = req.query;
 
-    if (vendors.length === 0) {
-      return res.status(200).json({ message: "No approved vendors found", data: [] });
+    // Main list still only APPROVED vendors
+    const where = { status: "APPROVED" };
+
+    // Optional createdAt range filter (applies only to APPROVED list)
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        const sd = new Date(startDate);
+        if (isNaN(sd)) return res.status(400).json({ error: "Invalid startDate" });
+        where.createdAt.gte = sd;
+      }
+      if (endDate) {
+        const ed = new Date(endDate);
+        if (isNaN(ed)) return res.status(400).json({ error: "Invalid endDate" });
+        ed.setHours(23, 59, 59, 999);
+        where.createdAt.lte = ed;
+      }
     }
 
-    res.status(200).json({ message: "Approved vendors fetched successfully", data: vendors });
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // Stats (approved focused) + today (all + unapproved)
+    const [
+      totalApprovedVendors,
+      totalActiveApprovedVendors,
+      totalInactiveApprovedVendors,
+      todayRegisteredApprovedVendors,
+      todayRegisteredAllVendors,
+      todayUnapprovedVendors,
+      approvedVendorsList
+    ] = await Promise.all([
+      prisma.vendor.count({ where: { status: "APPROVED" } }),
+      prisma.vendor.count({ where: { status: "APPROVED", isActive: true } }),
+      prisma.vendor.count({ where: { status: "APPROVED", isActive: false } }),
+      prisma.vendor.count({ where: { status: "APPROVED", createdAt: { gte: startOfToday } } }),
+      prisma.vendor.count({ where: { createdAt: { gte: startOfToday } } }),
+      prisma.vendor.findMany({
+        where: {
+          createdAt: { gte: startOfToday },
+          status: { not: "APPROVED" }, // PENDING or REJECTED
+        },
+        orderBy: { id: "desc" },
+      }),
+      prisma.vendor.findMany({
+        where,
+        orderBy: { id: "desc" },
+      }),
+    ]);
+
+    return res.status(200).json({
+      stats: {
+        totalApprovedVendors,
+        todayRegisteredApprovedVendors,
+        totalActiveApprovedVendors,
+        totalInactiveApprovedVendors,
+        todayRegisteredAllVendors,        // new: all statuses
+        todayUnapprovedCount: todayUnapprovedVendors.length,
+      },
+      todayUnapprovedVendors, // list of today's vendors not yet approved
+      filtersApplied: {
+        startDate: startDate || null,
+        endDate: endDate || null,
+      },
+      data: approvedVendorsList, // approved vendors (filtered by date if provided)
+    });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch vendors", details: error.message });
+    console.error("Error fetching vendors:", error);
+    return res.status(500).json({ error: "Failed to fetch vendors", details: error.message });
   }
 };
+
+
+
+
+
 
 export const getAllVendorsWithPendingStatus = async (req, res) => {
   try {
@@ -679,16 +845,59 @@ export const toggleMealAvailability = async (req, res) => {
 
 export const getAllDeliveryPartners = async (req, res) => {
   try {
-    const verifiedPartners = await prisma.deliveryPartner.findMany({
-      where: { isVerified: true },
-    });
+    const { startDate, endDate } = req.query;
 
-    const unverifiedPartners = await prisma.deliveryPartner.findMany({
-      where: { isVerified: false },
-    });
+    // Build optional createdAt range filter
+    const createdFilter = {};
+    if (startDate || endDate) {
+      createdFilter.createdAt = {};
+      if (startDate) {
+        const sd = new Date(startDate);
+        if (isNaN(sd)) return res.status(400).json({ error: "Invalid startDate" });
+        createdFilter.createdAt.gte = sd;
+      }
+      if (endDate) {
+        const ed = new Date(endDate);
+        if (isNaN(ed)) return res.status(400).json({ error: "Invalid endDate" });
+        ed.setHours(23, 59, 59, 999);
+        createdFilter.createdAt.lte = ed;
+      }
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [
+      totalDeliveryPartners,
+      totalPendingDeliveryPartners,
+      todayRegisteredDeliveryPartners,
+      totalActiveDeliveryPartners,
+      totalInactiveDeliveryPartners,
+      verifiedPartners,
+      unverifiedPartners
+    ] = await Promise.all([
+      prisma.deliveryPartner.count({ where: { ...createdFilter } }),
+      prisma.deliveryPartner.count({ where: { ...createdFilter, isVerified: false } }),
+      prisma.deliveryPartner.count({ where: { createdAt: { gte: startOfToday } } }),
+      prisma.deliveryPartner.count({ where: { ...createdFilter, isActive: true } }),
+      prisma.deliveryPartner.count({ where: { ...createdFilter, isActive: false } }),
+      prisma.deliveryPartner.findMany({ where: { ...createdFilter, isVerified: true }, orderBy: { id: 'desc' } }),
+      prisma.deliveryPartner.findMany({ where: { ...createdFilter, isVerified: false }, orderBy: { id: 'desc' } }),
+    ]);
 
     res.status(200).json({
       message: "Delivery partners fetched successfully",
+      filtersApplied: {
+        startDate: startDate || null,
+        endDate: endDate || null,
+      },
+      stats: {
+        totalDeliveryPartners,
+        totalPendingDeliveryPartners,
+        todayRegisteredDeliveryPartners,
+        totalActiveDeliveryPartners,
+        totalInactiveDeliveryPartners,
+      },
       verified: verifiedPartners,
       unverified: unverifiedPartners,
     });

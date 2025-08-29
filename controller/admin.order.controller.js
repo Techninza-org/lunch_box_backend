@@ -503,13 +503,26 @@ export const getAdminDashboardStats = async (req, res) => {
       _sum: { totalAmount: true },
     });
 
-    // Vendor statistics
+    // User / Vendor / Delivery Partner statistics
     const totalVendors = await prisma.vendor.count({
       where: { isActive: true },
     });
     const totalUsers = await prisma.user.count({ where: { isActive: true } });
     const totalDeliveryPartners = await prisma.deliveryPartner.count({
       where: { isActive: true },
+    });
+
+    // Today's registered users
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const todaysRegisteredUsers = await prisma.user.count({
+      where: {
+        createdAt: {
+          gte: startOfToday,
+          lt: endOfToday,
+        },
+      },
     });
 
     // Schedule statistics
@@ -543,8 +556,11 @@ export const getAdminDashboardStats = async (req, res) => {
         },
         users: {
           totalUsers,
+            // active users
           totalVendors,
           totalDeliveryPartners,
+          todaysRegisteredUsers,
+          todayDate: startOfToday.toISOString().split("T")[0],
         },
         schedules: {
           statusBreakdown: scheduleStats.reduce((acc, stat) => {

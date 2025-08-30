@@ -33,6 +33,7 @@ import {
   getVendorOrderInsights,
   getVendorStats,
   getVendorPerformanceStats,
+  createVendorRequestWithdrawal,
 } from "../controller/vendor.controller.js";
 
 import {
@@ -108,6 +109,7 @@ router.post("/create-vendor-wallet-order", createVendorWalletOrder);
 router.post("/verify-vendor-wallet", verifyVendorWalletPayment);
 router.get("/get-vendor-wallet", getVendorWallet);
 router.post("/debit-vendor-wallet", createVendorDebitTransaction);
+router.post("/withdraw-request", createVendorRequestWithdrawal);
 
 //vendor stats
 router.get("/get-vendor-stats", getVendorStats);

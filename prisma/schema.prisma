@@ -228,6 +228,7 @@ model Vendor {
   Order                   Order[]
   MealSchedule            MealSchedule[]
   VendorBankDetail        VendorBankDetail? // Added relation to VendorBankDetail
+  RequestWithdrawal       RequestWithdrawal[]
 }
 
 model VendorBankDetail {
@@ -357,6 +358,35 @@ model VendorWalletTransaction {
   vendor         Vendor        @relation(fields: [vendorId], references: [id])
   VendorWallet   VendorWallet? @relation(fields: [vendorWalletId], references: [id])
   vendorWalletId Int?
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model VendorRequestWithdrawalAmount {
+  id        Int           @id @default(autoincrement())
+  vendorId  Int
+  amount    Float
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id])
+}
+
+model DeliveryRequestWithdrawalAmount {
+  id         Int           @id @default(autoincrement())
+  deliveryId Int
+  amount     Float
+  status     RequestStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  deliveryPartner DeliveryPartner @relation(fields: [deliveryId], references: [id])
 }
 
 // products

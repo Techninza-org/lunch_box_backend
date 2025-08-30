@@ -404,11 +404,9 @@ export const getSupportTickets = async (req, res) => {
     const role = req.user?.role;
 
     if (!userId || role !== "VENDOR") {
-      return res
-        .status(403)
-        .json({
-          error: "Access denied. Only vendors can access this endpoint.",
-        });
+      return res.status(403).json({
+        error: "Access denied. Only vendors can access this endpoint.",
+      });
     }
 
     const tickets = await prisma.supportTicket.findMany({
@@ -788,6 +786,53 @@ export const getVendorPerformanceStats = async (req, res) => {
     });
   } catch (error) {
     console.error("Error getting vendor performance stats:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Vendor request withdrawal
+
+export const createVendorRequestWithdrawal = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const vendorId = req.user?.id;
+
+    // Validate input
+    if (!vendorId || !amount) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Check amount
+    if (amount <= 0) {
+      return res.status(400).json({ error: "Invalid withdrawal amount" });
+    }
+
+    // Check vendor balance
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: { wallet: true },
+    });
+
+    if (!vendor || !vendor.wallet) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    if (vendor.wallet.balance < amount) {
+      return res.status(400).json({ error: "Insufficient funds" });
+    }
+
+    // Create withdrawal request
+    const withdrawal = await prisma.vendorRequestWithdrawal.create({
+      data: {
+        vendorId,
+        amount,
+        status: "PENDING",
+      },
+    });
+
+    res.status(201).json(withdrawal);
+  } catch (error) {
+    console.error("Error creating vendor withdrawal request:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

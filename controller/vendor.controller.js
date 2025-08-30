@@ -802,7 +802,6 @@ export const createVendorRequestWithdrawal = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Check amount
     if (amount <= 0) {
       return res.status(400).json({ error: "Invalid withdrawal amount" });
     }
@@ -813,16 +812,18 @@ export const createVendorRequestWithdrawal = async (req, res) => {
       include: { VendorWallet: true },
     });
 
-    if (!vendor || !vendor.VendorWallet) {
-      return res.status(404).json({ error: "Vendor not found" });
+    if (!vendor || !vendor.VendorWallet?.length) {
+      return res.status(404).json({ error: "Vendor wallet not found" });
     }
 
-    if (vendor.VendorWallet.balance < amount) {
+    const wallet = vendor.VendorWallet[0]; // since it's defined as array in schema
+
+    if (wallet.balance < amount) {
       return res.status(400).json({ error: "Insufficient funds" });
     }
 
     // Create withdrawal request
-    const withdrawal = await prisma.vendorRequestWithdrawal.create({
+    const withdrawal = await prisma.vendorRequestWithdrawalAmount.create({
       data: {
         vendorId,
         amount,

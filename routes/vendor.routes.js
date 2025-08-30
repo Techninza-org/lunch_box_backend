@@ -35,20 +35,19 @@ import {
   getVendorPerformanceStats,
 } from "../controller/vendor.controller.js";
 
-import { 
+import {
   createSupportTicket,
   getSupportTickets,
-  sendMessageToSupportTicket
+  sendMessageToSupportTicket,
 } from "../controller/support.controller.js";
 
-import { 
+import {
   createVendorWalletOrder,
   verifyVendorWalletPayment,
   getVendorWallet,
-  createVendorDebitTransaction
+  createVendorDebitTransaction,
 } from "../controller/payment.controller.js";
 import { updateOrderStatusAdmin } from "../controller/admin.order.controller.js";
- 
 
 const upload = getMulterUpload("meals");
 const logoUpload = getMulterUpload("vendors");
@@ -66,7 +65,10 @@ router.get("/search-meals", searchMeals);
 router.get("/orders", getVendorOrders);
 router.get("/orders/:orderId", getVendorOrderById);
 router.patch("/orders/:orderId/status", updateVendorOrderStatus);
-router.patch("/update-schedulesorders-status/:orderId", updateOrderScheduleStatus);
+router.patch(
+  "/update-schedulesorders-status/:orderId",
+  updateOrderScheduleStatus
+);
 router.get("/get-order-insights", getVendorOrderInsights);
 
 // Schedule management routes
@@ -79,13 +81,16 @@ router.patch(
 );
 
 // Vendor profile management
-router.put("/update-vendor-profile", logoUpload.single("logo"), updateVendorProfile);
+router.put(
+  "/update-vendor-profile",
+  logoUpload.single("logo"),
+  updateVendorProfile
+);
 router.put("/update-vendor-meal-times", updateVendorMealTimes);
 router.post("/update-vendor-bank-details", addOrUpdateVendorBankDetail);
 router.patch("/toggle-vendor-active", toggleVendorActive);
 router.get("/get-vendor-details", getVendorProfile);
 router.get("/get-vendor-notifications", getVendorNotifications);
-
 
 // Dashboard statistics
 router.get("/dashboard-stats", getVendorDashboardStats);
@@ -93,7 +98,10 @@ router.get("/dashboard-stats", getVendorDashboardStats);
 // Support ticket routes
 router.post("/create-vendor-support-ticket", createSupportTicket);
 router.get("/get-vendor-support-tickets", getSupportTickets);
-router.post("/send-message-to-support-ticket-vendor/:ticketId", sendMessageToSupportTicket);
+router.post(
+  "/send-message-to-support-ticket-vendor/:ticketId",
+  sendMessageToSupportTicket
+);
 
 // Wallet routes
 router.post("/create-vendor-wallet-order", createVendorWalletOrder);
@@ -105,4 +113,4 @@ router.post("/debit-vendor-wallet", createVendorDebitTransaction);
 router.get("/get-vendor-stats", getVendorStats);
 router.get("/performance-stats", getVendorPerformanceStats);
 
-export default router; 
+export default router;

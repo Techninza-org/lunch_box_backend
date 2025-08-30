@@ -19,8 +19,7 @@ import {
   deliveryForgotPassword,
   deliveryVerifyOtpAndResetPassword,
   adminForgotPassword,
-  adminVerifyOtpAndResetPassword
-
+  adminVerifyOtpAndResetPassword,
 } from "../controller/auth.controller.js";
 
 // Use global multer utility for vendor logos

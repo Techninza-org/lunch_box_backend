@@ -187,10 +187,10 @@ model Vendor {
   description  String?
   phoneNumber2 String?
   // KYC / compliance documents
-  document1   String?
-  document2   String?
-  document3   String?
-  document4   String?
+  document1    String?
+  document2    String?
+  document3    String?
+  document4    String?
 
   // Address
   address   String?
@@ -345,13 +345,14 @@ enum WalletTransactionType {
 }
 
 model VendorWalletTransaction {
-  id        Int                   @id @default(autoincrement())
-  vendorId  Int
-  amount    Float
-  type      WalletTransactionType
-  paymentId String?               @unique
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id          Int                   @id @default(autoincrement())
+  vendorId    Int
+  amount      Float
+  description String?
+  type        WalletTransactionType
+  paymentId   String?               @unique
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   vendor         Vendor        @relation(fields: [vendorId], references: [id])
   VendorWallet   VendorWallet? @relation(fields: [vendorWalletId], references: [id])
@@ -399,9 +400,9 @@ model Meal {
   energyKcal  Int? // e.g. 500
   proteinGram Float? // e.g. 20.5
 
-  fatGram     Float?
-  fiberGram   Float?
-  carbsGram   Float?
+  fatGram   Float?
+  fiberGram Float?
+  carbsGram Float?
 
   basePrice   Float // e.g. 149.99
   isAvailable Boolean @default(true)
@@ -424,8 +425,6 @@ model Meal {
   isVerified Boolean   @default(false) // for vendor verification
   deletedAt  DateTime? // soft delete timestamp
 }
-
-
 
 model MealAvailableDay {
   id     Int    @id @default(autoincrement())

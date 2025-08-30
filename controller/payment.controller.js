@@ -253,7 +253,7 @@ export const getVendorWallet = async (req, res) => {
 
     // get wallet transactions
     const transactions = await prisma.vendorWalletTransaction.findMany({
-      where: { walletId: wallet.id, vendorId },
+      where: { vendorWalletId: wallet.id, vendorId },
       orderBy: { createdAt: "desc" },
     });
 

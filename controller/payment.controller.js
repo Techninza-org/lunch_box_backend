@@ -251,11 +251,17 @@ export const getVendorWallet = async (req, res) => {
       },
     });
 
+    // get wallet transactions
+    const transactions = await prisma.vendorWalletTransaction.findMany({
+      where: { walletId: wallet.id, vendorId },
+      orderBy: { createdAt: "desc" },
+    });
+
     if (!wallet) {
       return res.status(404).json({ error: "Wallet not found" });
     }
 
-    res.json({ wallet });
+    res.json({ wallet, transactions });
   } catch (err) {
     console.error("Error fetching wallet:", err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -553,7 +559,9 @@ export const createDeliveryWalletOrder = async (req, res) => {
     const deliveryId = req.user?.id;
 
     if (!deliveryId) {
-      return res.status(401).json({ error: "Unauthorized: Missing delivery partner ID" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Missing delivery partner ID" });
     }
 
     if (!amount || amount <= 0) {
@@ -668,7 +676,10 @@ export const verifyDeliveryWalletPayment = async (req, res) => {
       });
     });
 
-    res.json({ success: true, message: "Delivery wallet credited successfully" });
+    res.json({
+      success: true,
+      message: "Delivery wallet credited successfully",
+    });
   } catch (error) {
     console.error("Error verifying user wallet payment:", error);
     res.status(500).json({ error: "Internal server error" });

@@ -54,13 +54,14 @@ model DeliveryPartner {
   updatedAt      DateTime  @updatedAt
 
   // Relations
-  Order                     Order[]
-  isDeleted                 Boolean                     @default(false)
-  deletedAt                 DateTime?
-  MealSchedule              MealSchedule[]
-  DeliveryBankDetail        DeliveryBankDetail?
-  DeliveryWallet            DeliveryWallet?
-  DeliveryWalletTransaction DeliveryWalletTransaction[]
+  Order                           Order[]
+  isDeleted                       Boolean                           @default(false)
+  deletedAt                       DateTime?
+  MealSchedule                    MealSchedule[]
+  DeliveryBankDetail              DeliveryBankDetail?
+  DeliveryWallet                  DeliveryWallet?
+  DeliveryWalletTransaction       DeliveryWalletTransaction[]
+  DeliveryRequestWithdrawalAmount DeliveryRequestWithdrawalAmount[]
 }
 
 model DeliveryBankDetail {
@@ -228,7 +229,8 @@ model Vendor {
   Order                   Order[]
   MealSchedule            MealSchedule[]
   VendorBankDetail        VendorBankDetail? // Added relation to VendorBankDetail
-  RequestWithdrawal       RequestWithdrawal[]
+
+  VendorRequestWithdrawalAmount VendorRequestWithdrawalAmount[]
 }
 
 model VendorBankDetail {

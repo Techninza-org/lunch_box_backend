@@ -810,14 +810,14 @@ export const createVendorRequestWithdrawal = async (req, res) => {
     // Check vendor balance
     const vendor = await prisma.vendor.findUnique({
       where: { id: vendorId },
-      include: { wallet: true },
+      include: { VendorWallet: true },
     });
 
-    if (!vendor || !vendor.wallet) {
+    if (!vendor || !vendor.VendorWallet) {
       return res.status(404).json({ error: "Vendor not found" });
     }
 
-    if (vendor.wallet.balance < amount) {
+    if (vendor.VendorWallet.balance < amount) {
       return res.status(400).json({ error: "Insufficient funds" });
     }
 

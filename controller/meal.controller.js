@@ -19,115 +19,245 @@ function indexFiles(files) {
  * @route POST /meals
  * @access Vendor
  */
+// export const addVendorMeal = async (req, res) => {
+//   try {
+//     // Step 1: Index uploaded files by their fieldname for easy access
+//     // This helps to quickly retrieve files like mainImage, gallery images, and option images
+//     const filesByField = indexFiles(req.files);
+//     const vendorId = req.user.id;
+
+//     // Step 2: Extract all meal-related fields from the request body
+//     // These include basic info, nutrition, options, tags, etc.
+//     const {
+//       // vendorId, // Vendor's ID (required)
+//       title, // Meal title (required)
+//       description, // Meal description (optional)
+//       type, // Meal type (lunch, dinner, etc.)
+//       configType, // SINGLE or CUSTOMIZABLE
+//       cuisine, // Cuisine type
+//       isVeg, // Is vegetarian ("true"/"false" or "1"/"0")
+//       energyKcal, // Nutrition info (optional)
+//       proteinGram,
+//       fatGram,
+//       fiberGram,
+//       carbsGram,
+//       basePrice, // Base price (required)
+//       isWeekly, // Is weekly meal ("true"/"false")
+//       availableDays, // Comma-separated days (e.g., "MON,TUE")
+//       optionGroups, // JSON string of option groups (for CUSTOMIZABLE)
+//       dietaryTags, // JSON string of dietary tags
+//       ingredients, // JSON string of ingredients
+//     } = req.body;
+
+//     // Step 3: Handle main meal image (thumbnail)
+//     // The fieldname should be "mainImage" in the upload
+//     const mainFile = filesByField["mainImage"];
+//     // If main image is uploaded, set its path, else null
+//     const image = mainFile ? `/uploads/meals/${mainFile.filename}` : null;
+
+//     // Step 4: Handle gallery images (multiple files, fieldnames like gallery_0, gallery_1, ...)
+//     // Collect all files whose fieldname starts with "gallery_"
+//     const galleryFiles = Object.keys(filesByField)
+//       .filter((key) => key.startsWith("gallery_"))
+//       .map((key) => filesByField[key]);
+
+//     // Step 5: Build the base meal data object for Prisma
+//     // This includes all scalar fields and nested relations
+//     const data = {
+//       vendorId: Number(vendorId), // Convert vendorId to number
+//       title,
+//       description,
+//       image, // Main image URL or null
+//       type,
+//       configType,
+//       cuisine,
+//       isVeg: isVeg === "true" || isVeg === "1", // Convert to boolean
+//       energyKcal: energyKcal ? +energyKcal : undefined, // Convert to number if present
+//       proteinGram: proteinGram ? +proteinGram : undefined,
+//       fatGram: fatGram ? +fatGram : undefined,
+//       fiberGram: fiberGram ? +fiberGram : undefined,
+//       carbsGram: carbsGram ? +carbsGram : undefined,
+//       basePrice: +basePrice, // Required, convert to number
+//       isAvailable: true, // Default to true on creation
+//       isWeekly: isWeekly === "true" || isWeekly === "1", // Convert to boolean
+//       // Step 5a: Add gallery images as related MealImage records
+//       mealImages: {
+//         create: galleryFiles.map((f) => ({
+//           url: `/uploads/meals/${f.filename}`,
+//         })),
+//       },
+//       // Step 5b: Add available days as related MealAvailableDay records
+//       availableDays: availableDays
+//         ? { create: availableDays.split(",").map((d) => ({ day: d.trim() })) }
+//         : undefined,
+//     };
+
+//     // Step 6: Add dietary tags if provided (expects JSON array of strings)
+//     if (dietaryTags) {
+//       // Parse dietaryTags JSON string and create related records
+//       const tags = JSON.parse(dietaryTags);
+//       data.dietaryTags = { create: tags.map((tag) => ({ tag })) };
+//     }
+
+//     // Step 7: Add ingredients if provided (expects JSON array of strings)
+//     if (ingredients) {
+//       // Parse ingredients JSON string and create related records
+//       const items = JSON.parse(ingredients);
+//       data.ingredients = { create: items.map((name) => ({ name })) };
+//     }
+
+//     // Step 8: Add option groups and options if meal is CUSTOMIZABLE
+//     // Expects optionGroups as JSON array of groups, each with options
+//     if (configType === "CUSTOMIZABLE" && optionGroups) {
+//       // Parse optionGroups JSON string
+//       const groups = JSON.parse(optionGroups);
+//       data.mealOptionGroups = {
+//         create: groups.map((grp, gIdx) => ({
+//           title: grp.title, // Group title
+//           isRequired: grp.isRequired, // Is selection required
+//           minSelect: grp.minSelect, // Minimum options to select
+//           maxSelect: grp.maxSelect, // Maximum options to select
+
+//           options: {
+//             create: grp.options.map((opt, oIdx) => {
+//               // Option image fieldname: option_{groupIndex}_{optionIndex}
+//               const key = `option_${gIdx}_${oIdx}`;
+//               const file = filesByField[key];
+//               return {
+//                 name: opt.name, // Option name
+//                 price: +opt.price, // Option price
+//                 image: file ? `/uploads/meals/${file.filename}` : null, // Option image URL
+//                 isDefault: !!opt.isDefault, // Is default option
+//               };
+//             }),
+//           },
+//         })),
+//       };
+//     }
+
+//     // Step 9: Create the meal and all nested relations in a single Prisma call
+//     // This will create the meal, images, option groups, tags, etc. atomically
+//     const meal = await prisma.meal.create({
+//       data,
+//       include: {
+//         mealImages: true, // Include gallery images
+//         mealOptionGroups: { include: { options: true } }, // Include option groups and options
+//         availableDays: true, // Include available days
+//         dietaryTags: true, // Include dietary tags
+//         ingredients: true, // Include ingredients
+//       },
+//     });
+
+//     // Step 10: Return the created meal as JSON response
+//     return res.status(201).json(meal);
+//   } catch (error) {
+//     // Step 11: Handle errors and return a 500 response with error details
+//     console.error(error);
+//     return res
+//       .status(500)
+//       .json({ error: "Failed to create meal", details: error.message });
+//   }
+// };
 export const addVendorMeal = async (req, res) => {
   try {
-    // Step 1: Index uploaded files by their fieldname for easy access
-    // This helps to quickly retrieve files like mainImage, gallery images, and option images
     const filesByField = indexFiles(req.files);
     const vendorId = req.user.id;
 
-    // Step 2: Extract all meal-related fields from the request body
-    // These include basic info, nutrition, options, tags, etc.
     const {
-      // vendorId, // Vendor's ID (required)
-      title, // Meal title (required)
-      description, // Meal description (optional)
-      type, // Meal type (lunch, dinner, etc.)
-      configType, // SINGLE or CUSTOMIZABLE
-      cuisine, // Cuisine type
-      isVeg, // Is vegetarian ("true"/"false" or "1"/"0")
-      energyKcal, // Nutrition info (optional)
+      title,
+      description,
+      type,
+      configType,
+      cuisine,
+      isVeg,
+      energyKcal,
       proteinGram,
       fatGram,
       fiberGram,
       carbsGram,
-      basePrice, // Base price (required)
-      isWeekly, // Is weekly meal ("true"/"false")
-      availableDays, // Comma-separated days (e.g., "MON,TUE")
-      optionGroups, // JSON string of option groups (for CUSTOMIZABLE)
-      dietaryTags, // JSON string of dietary tags
-      ingredients, // JSON string of ingredients
+      basePrice,
+      isWeekly,
+      availableDays,
+      optionGroups,
+      dietaryTags,
+      ingredients,
     } = req.body;
 
-    // Step 3: Handle main meal image (thumbnail)
-    // The fieldname should be "mainImage" in the upload
     const mainFile = filesByField["mainImage"];
-    // If main image is uploaded, set its path, else null
     const image = mainFile ? `/uploads/meals/${mainFile.filename}` : null;
 
-    // Step 4: Handle gallery images (multiple files, fieldnames like gallery_0, gallery_1, ...)
-    // Collect all files whose fieldname starts with "gallery_"
     const galleryFiles = Object.keys(filesByField)
       .filter((key) => key.startsWith("gallery_"))
       .map((key) => filesByField[key]);
 
-    // Step 5: Build the base meal data object for Prisma
-    // This includes all scalar fields and nested relations
     const data = {
-      vendorId: Number(vendorId), // Convert vendorId to number
       title,
       description,
-      image, // Main image URL or null
-      type,
-      configType,
+      image,
+      type, // must match MealType enum
+      configType, // must match MealConfigType enum
       cuisine,
-      isVeg: isVeg === "true" || isVeg === "1", // Convert to boolean
-      energyKcal: energyKcal ? +energyKcal : undefined, // Convert to number if present
-      proteinGram: proteinGram ? +proteinGram : undefined,
-      fatGram: fatGram ? +fatGram : undefined,
-      fiberGram: fiberGram ? +fiberGram : undefined,
-      carbsGram: carbsGram ? +carbsGram : undefined,
-      basePrice: +basePrice, // Required, convert to number
-      isAvailable: true, // Default to true on creation
-      isWeekly: isWeekly === "true" || isWeekly === "1", // Convert to boolean
-      // Step 5a: Add gallery images as related MealImage records
+      isVeg: isVeg === "true" || isVeg === "1",
+      energyKcal: energyKcal ? Number(energyKcal) : undefined,
+      proteinGram: proteinGram ? Number(proteinGram) : undefined,
+      fatGram: fatGram ? Number(fatGram) : undefined,
+      fiberGram: fiberGram ? Number(fiberGram) : undefined,
+      carbsGram: carbsGram ? Number(carbsGram) : undefined,
+      basePrice: basePrice ? Number(basePrice) : 0, // ✅ prevents NaN
+      isAvailable: true,
+      isWeekly: isWeekly === "true" || isWeekly === "1",
+
       mealImages: {
         create: galleryFiles.map((f) => ({
           url: `/uploads/meals/${f.filename}`,
         })),
       },
-      // Step 5b: Add available days as related MealAvailableDay records
+
       availableDays: availableDays
-        ? { create: availableDays.split(",").map((d) => ({ day: d.trim() })) }
+        ? {
+            create: (() => {
+              try {
+                // If frontend sent JSON string, parse it
+                const days = JSON.parse(availableDays);
+                return days.map((d) => ({ day: d.trim() }));
+              } catch {
+                // If just comma string, fallback
+                return availableDays.split(",").map((d) => ({ day: d.trim() }));
+              }
+            })(),
+          }
         : undefined,
+
+      vendor: { connect: { id: Number(vendorId) } }, // ✅ fixes relation issue
     };
 
-    // Step 6: Add dietary tags if provided (expects JSON array of strings)
     if (dietaryTags) {
-      // Parse dietaryTags JSON string and create related records
       const tags = JSON.parse(dietaryTags);
       data.dietaryTags = { create: tags.map((tag) => ({ tag })) };
     }
 
-    // Step 7: Add ingredients if provided (expects JSON array of strings)
     if (ingredients) {
-      // Parse ingredients JSON string and create related records
       const items = JSON.parse(ingredients);
       data.ingredients = { create: items.map((name) => ({ name })) };
     }
 
-    // Step 8: Add option groups and options if meal is CUSTOMIZABLE
-    // Expects optionGroups as JSON array of groups, each with options
     if (configType === "CUSTOMIZABLE" && optionGroups) {
-      // Parse optionGroups JSON string
       const groups = JSON.parse(optionGroups);
       data.mealOptionGroups = {
         create: groups.map((grp, gIdx) => ({
-          title: grp.title, // Group title
-          isRequired: grp.isRequired, // Is selection required
-          minSelect: grp.minSelect, // Minimum options to select
-          maxSelect: grp.maxSelect, // Maximum options to select
-          
+          title: grp.title,
+          isRequired: !!grp.isRequired,
+          minSelect: grp.minSelect ?? null,
+          maxSelect: grp.maxSelect ?? null,
           options: {
             create: grp.options.map((opt, oIdx) => {
-              // Option image fieldname: option_{groupIndex}_{optionIndex}
               const key = `option_${gIdx}_${oIdx}`;
               const file = filesByField[key];
               return {
-                name: opt.name, // Option name
-                price: +opt.price, // Option price
-                image: file ? `/uploads/meals/${file.filename}` : null, // Option image URL
-                isDefault: !!opt.isDefault, // Is default option
+                name: opt.name,
+                price: Number(opt.price) || 0,
+                image: file ? `/uploads/meals/${file.filename}` : null,
+                isDefault: !!opt.isDefault,
               };
             }),
           },
@@ -135,23 +265,19 @@ export const addVendorMeal = async (req, res) => {
       };
     }
 
-    // Step 9: Create the meal and all nested relations in a single Prisma call
-    // This will create the meal, images, option groups, tags, etc. atomically
     const meal = await prisma.meal.create({
       data,
       include: {
-        mealImages: true, // Include gallery images
-        mealOptionGroups: { include: { options: true } }, // Include option groups and options
-        availableDays: true, // Include available days
-        dietaryTags: true, // Include dietary tags
-        ingredients: true, // Include ingredients
+        mealImages: true,
+        mealOptionGroups: { include: { options: true } },
+        availableDays: true,
+        dietaryTags: true,
+        ingredients: true,
       },
     });
 
-    // Step 10: Return the created meal as JSON response
     return res.status(201).json(meal);
   } catch (error) {
-    // Step 11: Handle errors and return a 500 response with error details
     console.error(error);
     return res
       .status(500)
@@ -402,7 +528,7 @@ export const updateVendorMeal = async (req, res) => {
 /**
  * Update the status of a meal (available/unavailable)
  */
-export const  updateStatusMealVendor = async (req, res) => {
+export const updateStatusMealVendor = async (req, res) => {
   const { id } = req.params;
 
   try {

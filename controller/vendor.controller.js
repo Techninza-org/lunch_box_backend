@@ -826,7 +826,7 @@ export const createVendorRequestWithdrawal = async (req, res) => {
     const withdrawal = await prisma.vendorRequestWithdrawalAmount.create({
       data: {
         vendorId,
-        amount,
+        amount: parseFloat(amount),
         status: "PENDING",
       },
     });

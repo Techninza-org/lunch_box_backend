@@ -224,6 +224,7 @@ console.log(id);
         isDeleted: false,
       },
       include: {
+        type: true,
         mealImages: true, // Gallery images
         mealOptionGroups: {
           include: {

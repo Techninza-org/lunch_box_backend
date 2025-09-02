@@ -271,7 +271,7 @@ export const addOrUpdateDeliveryBankDetail = async (req, res) => {
   }
 };
 
-// Get delivery partner orders with time filters
+// Get delivery partner meal schedules with time filters
 export const getDeliveryPartnerOrders = async (req, res) => {
   try {
     const deliveryPartnerId = req.user?.id;
@@ -310,21 +310,32 @@ export const getDeliveryPartnerOrders = async (req, res) => {
         return res.status(400).json({ error: "Invalid filter. Use: today, yesterday, lastWeek, or lastMonth" });
     }
 
-    // Get orders for the delivery partner within the date range
-    const orders = await prisma.order.findMany({
+    // Get meal schedules for the delivery partner within the date range
+    const meals = await prisma.mealSchedule.findMany({
       where: {
         deliveryPartnerId,
-        createdAt: {
+        scheduledDate: {
           gte: startDate,
           lte: endDate,
         },
       },
+      orderBy: {
+        scheduledDate: 'asc',
+      },
       include: {
-        user: {
+        order: {
           select: {
             id: true,
-            name: true,
-            phoneNumber: true,
+            userId: true,
+            deliveryAddress: true,
+            deliveryCity: true,
+            deliveryState: true,
+            deliveryZipCode: true,
+            deliveryPhone: true,
+            status: true,
+            totalAmount: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         vendor: {
@@ -335,41 +346,26 @@ export const getDeliveryPartnerOrders = async (req, res) => {
             phoneNumber: true,
           },
         },
-        orderItems: {
-          include: {
-            selectedOptions: true,
-          },
-        },
-        mealSchedules: {
-          where: {
-            deliveryPartnerId,
-          },
-          select: {
-            id: true,
-            scheduledDate: true,
-            status: true,
-            mealType: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
 
     // Calculate summary statistics
-    const totalOrders = orders.length;
-    const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const pendingOrders = orders.filter(order => order.status === 'PENDING').length;
-    const completedOrders = orders.filter(order => order.status === 'DELIVERED').length;
-    const cancelledOrders = orders.filter(order => order.status === 'CANCELLED').length;
+    const totalMeals = meals.length;
+    const totalAmount = meals.reduce((sum, meal) => sum + (meal.order?.totalAmount || 0), 0);
+    const pendingMeals = meals.filter(meal => meal.status === 'SCHEDULED').length;
+    const preparedMeals = meals.filter(meal => meal.status === 'PREPARED').length;
+    const outForDeliveryMeals = meals.filter(meal => meal.status === 'OUT_FOR_DELIVERY').length;
+    const deliveredMeals = meals.filter(meal => meal.status === 'DELIVERED').length;
+    const cancelledMeals = meals.filter(meal => meal.status === 'CANCELLED').length;
 
-    // Group orders by status
-    const ordersByStatus = {
-      pending: orders.filter(order => order.status === 'PENDING'),
-      completed: orders.filter(order => order.status === 'DELIVERED'),
-      cancelled: orders.filter(order => order.status === 'CANCELLED'),
-      other: orders.filter(order => !['PENDING', 'DELIVERED', 'CANCELLED'].includes(order.status)),
+    // Group meals by status
+    const mealsByStatus = {
+      scheduled: meals.filter(meal => meal.status === 'SCHEDULED'),
+      prepared: meals.filter(meal => meal.status === 'PREPARED'),
+      outForDelivery: meals.filter(meal => meal.status === 'OUT_FOR_DELIVERY'),
+      delivered: meals.filter(meal => meal.status === 'DELIVERED'),
+      cancelled: meals.filter(meal => meal.status === 'CANCELLED'),
+      other: meals.filter(meal => !['SCHEDULED', 'PREPARED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'].includes(meal.status)),
     };
 
     return res.status(200).json({
@@ -384,18 +380,20 @@ export const getDeliveryPartnerOrders = async (req, res) => {
         },
       },
       summary: {
-        totalOrders,
+        totalMeals,
         totalAmount: parseFloat(totalAmount.toFixed(2)),
-        pendingOrders,
-        completedOrders,
-        cancelledOrders,
+        scheduled: pendingMeals,
+        prepared: preparedMeals,
+        outForDelivery: outForDeliveryMeals,
+        delivered: deliveredMeals,
+        cancelled: cancelledMeals,
       },
-      ordersByStatus,
-      orders,
+      mealsByStatus,
+      meals,
     });
 
   } catch (error) {
-    console.error("Error fetching delivery partner orders:", error);
+    console.error("Error fetching delivery partner meal schedules:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

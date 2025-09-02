@@ -545,14 +545,21 @@ export const addAddress = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      // Set all existing addresses' isDefault = false
-      await tx.userAddress.updateMany({
-        where: { userId },
-        data: { isDefault: false },
-      });
+    // Check if user has any existing addresses
+    const existingAddresses = await prisma.userAddress.findMany({
+      where: { userId },
+    });
 
-      // Create new address as default
+    const result = await prisma.$transaction(async (tx) => {
+      // Only set existing addresses to non-default if user has addresses
+      if (existingAddresses.length > 0) {
+        await tx.userAddress.updateMany({
+          where: { userId },
+          data: { isDefault: false },
+        });
+      }
+
+      // Create new address
       const newAddress = await tx.userAddress.create({
         data: {
           userId,
@@ -563,20 +570,88 @@ export const addAddress = async (req, res) => {
           phoneNumber,
           longitude,
           latitude,
-          isDefault: true,
+          // Set as default only if user has no existing addresses
+          isDefault: existingAddresses.length === 0,
         },
       });
 
       return newAddress;
     });
 
+    const message = existingAddresses.length === 0 
+      ? "Address added successfully and set as default."
+      : "Address added successfully.";
+
     return res.status(201).json({
       success: true,
-      message: "Address added successfully and set as default.",
+      message,
       data: result,
     });
   } catch (error) {
     console.error("Add Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+// Set an address as default by address ID
+export const setDefaultAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "User ID is required" });
+    }
+
+    if (!addressId || isNaN(parseInt(addressId))) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Valid address ID is required" });
+    }
+
+    // Check if the address exists and belongs to the user
+    const address = await prisma.userAddress.findFirst({
+      where: { 
+        id: parseInt(addressId),
+        userId: userId 
+      },
+    });
+
+    if (!address) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Address not found or doesn't belong to user" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Set all existing addresses' isDefault = false
+      await tx.userAddress.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+
+      // Set the selected address as default
+      const updatedAddress = await tx.userAddress.update({
+        where: { id: parseInt(addressId) },
+        data: { isDefault: true },
+      });
+
+      return updatedAddress;
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Address set as default successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Set Default Address Error:", error);
     return res.status(500).json({
       success: false,
       message: "Something went wrong",

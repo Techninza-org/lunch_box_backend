@@ -10,6 +10,7 @@ import {
   searchMeals,
   getMealById,
   addAddress,
+  setDefaultAddress,
   getAddress,
   getUserNotifications,
   updateUserProfile,
@@ -51,6 +52,7 @@ const logoUpload = getMulterUpload("users");
 
 router.post("/add-current-location", addUserCurrentLocation);
 router.post("/add-address", addAddress);
+router.get("/set-default-address/:addressId", setDefaultAddress);
 router.get("/get-addresses", getAddress);
 router.get("/home", getHomePage);
 // Get all restaurants by user location

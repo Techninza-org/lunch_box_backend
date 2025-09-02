@@ -10,7 +10,8 @@ import {
   getDeliveryNotifications,
   getMealsByDeliveryPartner,
   updateDeliveryPartnerProfile,
-  addOrUpdateDeliveryBankDetail
+  addOrUpdateDeliveryBankDetail,
+  getDeliveryPartnerOrders
 } from "../controller/delivery.controller.js";
 import { 
   createSupportTicket,
@@ -49,6 +50,7 @@ router.get("/", (req, res) => {
 
 router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
+router.get("/orders", getDeliveryPartnerOrders);
 router.put("/update-delivery-profile", deliveryPartner.any(), updateDeliveryPartnerProfile);
 router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
 

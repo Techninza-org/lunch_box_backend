@@ -270,3 +270,132 @@ export const addOrUpdateDeliveryBankDetail = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get delivery partner orders with time filters
+export const getDeliveryPartnerOrders = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+    const { filter = 'today' } = req.query; // today, yesterday, lastWeek, lastMonth
+
+    if (!deliveryPartnerId) {
+      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+    }
+
+    // Calculate date ranges based on filter
+    const now = new Date();
+    let startDate, endDate;
+
+    switch (filter) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        break;
+      
+      case 'yesterday':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+        break;
+      
+      case 'lastWeek':
+        startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+        endDate = now;
+        break;
+      
+      case 'lastMonth':
+        startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        endDate = now;
+        break;
+      
+      default:
+        return res.status(400).json({ error: "Invalid filter. Use: today, yesterday, lastWeek, or lastMonth" });
+    }
+
+    // Get orders for the delivery partner within the date range
+    const orders = await prisma.order.findMany({
+      where: {
+        deliveryPartnerId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            phoneNumber: true,
+          },
+        },
+        orderItems: {
+          include: {
+            selectedOptions: true,
+          },
+        },
+        mealSchedules: {
+          where: {
+            deliveryPartnerId,
+          },
+          select: {
+            id: true,
+            scheduledDate: true,
+            status: true,
+            mealType: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // Calculate summary statistics
+    const totalOrders = orders.length;
+    const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const pendingOrders = orders.filter(order => order.status === 'PENDING').length;
+    const completedOrders = orders.filter(order => order.status === 'DELIVERED').length;
+    const cancelledOrders = orders.filter(order => order.status === 'CANCELLED').length;
+
+    // Group orders by status
+    const ordersByStatus = {
+      pending: orders.filter(order => order.status === 'PENDING'),
+      completed: orders.filter(order => order.status === 'DELIVERED'),
+      cancelled: orders.filter(order => order.status === 'CANCELLED'),
+      other: orders.filter(order => !['PENDING', 'DELIVERED', 'CANCELLED'].includes(order.status)),
+    };
+
+    return res.status(200).json({
+      success: true,
+      filter,
+      dateRange: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        readable: {
+          start: startDate.toLocaleDateString(),
+          end: endDate.toLocaleDateString(),
+        },
+      },
+      summary: {
+        totalOrders,
+        totalAmount: parseFloat(totalAmount.toFixed(2)),
+        pendingOrders,
+        completedOrders,
+        cancelledOrders,
+      },
+      ordersByStatus,
+      orders,
+    });
+
+  } catch (error) {
+    console.error("Error fetching delivery partner orders:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

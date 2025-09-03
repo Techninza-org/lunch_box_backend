@@ -1337,7 +1337,18 @@ export const getAllScheduledOrders = async (req, res) => {
     const mealsByDate = {};
     
     allMealSchedules.forEach(mealSchedule => {
-      const dateKey = mealSchedule.scheduledDate?.split('T')[0]; // Get just the date part (YYYY-MM-DD)
+      // Handle scheduledDate - it could be a Date object or string
+      let dateKey;
+      if (mealSchedule.scheduledDate instanceof Date) {
+        // If it's a Date object, format it to YYYY-MM-DD
+        dateKey = mealSchedule.scheduledDate.toISOString().split('T')[0];
+      } else if (typeof mealSchedule.scheduledDate === 'string') {
+        // If it's already a string, extract the date part
+        dateKey = mealSchedule.scheduledDate.split('T')[0];
+      } else {
+        // Skip if scheduledDate is null/undefined
+        return;
+      }
       
       if (!mealsByDate[dateKey]) {
         mealsByDate[dateKey] = [];

@@ -1300,7 +1300,27 @@ export const getAllSupportTicketsGroupedById = async (req, res) => {
   }
 };
 
-
+export const getAllScheduledOrders = async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        status: "PENDING"
+      },
+      include: {
+        user: true,
+        vendor: true,
+        deliveryPartner: true,
+        orderItems: true,
+        mealSchedules: true,
+      }
+    })
+    return res.status(200).json({ orders });
+  }
+  catch (error) {
+    console.error("Error fetching scheduled orders:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 
 

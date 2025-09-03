@@ -37,6 +37,7 @@ import {
   getAllSupportTicketsGroupedById,
   getAllAdmin,
   softdeleteAdmin,
+  getAllScheduledOrders,
 
 
 } from "../controller/admin.controller.js";
@@ -59,6 +60,8 @@ import {
 } from "../controller/payment.controller.js";
 
 // Define admin routes here
+
+router.get('/pending-orders', getAllScheduledOrders)
 
 router.get("/get-all-admins", getAllAdmin);
 router.delete("/soft-delete-admin/:id", softdeleteAdmin);

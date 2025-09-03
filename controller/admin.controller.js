@@ -1312,11 +1312,7 @@ export const getAllScheduledOrders = async (req, res) => {
         }
       },
       include: {
-        mealSchedules: {
-          where: {
-            status: "SCHEDULED"
-          }
-        },
+        mealSchedules : true
       }
     })
     

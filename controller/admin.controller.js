@@ -1324,7 +1324,37 @@ export const getAllScheduledOrders = async (req, res) => {
       }
     })
     
-    return res.status(200).json({ orders });
+    // Group meal schedules by date for each order
+    const ordersWithGroupedMeals = orders.map(order => {
+      // Group meal schedules by scheduledDate
+      const mealsByDate = {};
+      
+      order.mealSchedules.forEach(mealSchedule => {
+        const dateKey = mealSchedule.scheduledDate.split('T')[0]; // Get just the date part (YYYY-MM-DD)
+        
+        if (!mealsByDate[dateKey]) {
+          mealsByDate[dateKey] = [];
+        }
+        
+        mealsByDate[dateKey].push(mealSchedule);
+      });
+      
+      // Convert to array format with date and meals
+      const groupedMeals = Object.keys(mealsByDate).map(date => ({
+        scheduledDate: date,
+        meals: mealsByDate[date]
+      }));
+      
+      // Sort by date
+      groupedMeals.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+      
+      return {
+        ...order,
+        mealSchedules: groupedMeals
+      };
+    });
+    
+    return res.status(200).json({ orders: ordersWithGroupedMeals });
   }
   catch (error) {
     console.error("Error fetching scheduled orders:", error);

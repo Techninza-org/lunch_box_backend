@@ -61,7 +61,7 @@ import {
 
 // Define admin routes here
 
-router.get('/pending-orders', getAllScheduledOrders)
+router.get('/scheduled-orders', getAllScheduledOrders)
 
 router.get("/get-all-admins", getAllAdmin);
 router.delete("/soft-delete-admin/:id", softdeleteAdmin);

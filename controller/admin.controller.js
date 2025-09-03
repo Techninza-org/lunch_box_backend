@@ -1304,16 +1304,26 @@ export const getAllScheduledOrders = async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
       where: {
-        status: "PENDING"
+        status: "PENDING",
+        mealSchedules: {
+          some: {
+            status: "SCHEDULED"
+          }
+        }
       },
       include: {
         user: true,
         vendor: true,
         deliveryPartner: true,
         orderItems: true,
-        mealSchedules: true,
+        mealSchedules: {
+          where: {
+            status: "SCHEDULED"
+          }
+        },
       }
     })
+    
     return res.status(200).json({ orders });
   }
   catch (error) {

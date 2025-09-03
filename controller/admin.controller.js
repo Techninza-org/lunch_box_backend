@@ -1330,7 +1330,7 @@ export const getAllScheduledOrders = async (req, res) => {
       const mealsByDate = {};
       
       order.mealSchedules.forEach(mealSchedule => {
-        const dateKey = mealSchedule.scheduledDate; // Get just the date part (YYYY-MM-DD)
+        const dateKey = mealSchedule.scheduledDate?.split('T')[0]; // Get just the date part (YYYY-MM-DD)
         
         if (!mealsByDate[dateKey]) {
           mealsByDate[dateKey] = [];

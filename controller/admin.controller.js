@@ -1312,10 +1312,6 @@ export const getAllScheduledOrders = async (req, res) => {
         }
       },
       include: {
-        user: true,
-        vendor: true,
-        deliveryPartner: true,
-        orderItems: true,
         mealSchedules: {
           where: {
             status: "SCHEDULED"
@@ -1324,37 +1320,42 @@ export const getAllScheduledOrders = async (req, res) => {
       }
     })
     
-    // Group meal schedules by date for each order
-    const ordersWithGroupedMeals = orders.map(order => {
-      // Group meal schedules by scheduledDate
-      const mealsByDate = {};
-      
+    // Extract all meal schedules from all orders
+    const allMealSchedules = [];
+    
+    orders.forEach(order => {
       order.mealSchedules.forEach(mealSchedule => {
-        const dateKey = mealSchedule.scheduledDate?.split('T')[0]; // Get just the date part (YYYY-MM-DD)
-        
-        if (!mealsByDate[dateKey]) {
-          mealsByDate[dateKey] = [];
-        }
-        
-        mealsByDate[dateKey].push(mealSchedule);
+        allMealSchedules.push({
+          ...mealSchedule,
+          orderId: order.id,
+          orderType: order.orderType
+        });
       });
-      
-      // Convert to array format with date and meals
-      const groupedMeals = Object.keys(mealsByDate).map(date => ({
-        scheduledDate: date,
-        meals: mealsByDate[date]
-      }));
-      
-      // Sort by date
-      groupedMeals.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-      
-      return {
-        ...order,
-        mealSchedules: groupedMeals
-      };
     });
     
-    return res.status(200).json({ orders: ordersWithGroupedMeals });
+    // Group all meal schedules by date
+    const mealsByDate = {};
+    
+    allMealSchedules.forEach(mealSchedule => {
+      const dateKey = mealSchedule.scheduledDate?.split('T')[0]; // Get just the date part (YYYY-MM-DD)
+      
+      if (!mealsByDate[dateKey]) {
+        mealsByDate[dateKey] = [];
+      }
+      
+      mealsByDate[dateKey].push(mealSchedule);
+    });
+    
+    // Convert to array format with date and meals
+    const groupedMeals = Object.keys(mealsByDate).map(date => ({
+      scheduledDate: date,
+      meals: mealsByDate[date]
+    }));
+    
+    // Sort by date
+    groupedMeals.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    
+    return res.status(200).json({ mealSchedules: groupedMeals });t
   }
   catch (error) {
     console.error("Error fetching scheduled orders:", error);

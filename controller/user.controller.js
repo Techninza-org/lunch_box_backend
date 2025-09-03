@@ -474,6 +474,15 @@ export const getMealById = async (req, res) => {
             address: true,
             city: true,
             state: true,
+            // Include all timing fields
+            breakfastStart: true,
+            breakfastEnd: true,
+            lunchStart: true,
+            lunchEnd: true,
+            eveningStart: true,
+            eveningEnd: true,
+            dinnerStart: true,
+            dinnerEnd: true,
           },
         },
         mealImages: true,
@@ -495,9 +504,48 @@ export const getMealById = async (req, res) => {
       });
     }
 
+    // Add timing information based on meal type
+    let timing = null;
+    if (meal.vendor) {
+      switch (meal.type) {
+        case "Breakfast":
+          timing = {
+            start: meal.vendor.breakfastStart,
+            end: meal.vendor.breakfastEnd,
+          };
+          break;
+        case "Lunch":
+          timing = {
+            start: meal.vendor.lunchStart,
+            end: meal.vendor.lunchEnd,
+          };
+          break;
+        case "Evening":
+          timing = {
+            start: meal.vendor.eveningStart,
+            end: meal.vendor.eveningEnd,
+          };
+          break;
+        case "Dinner":
+          timing = {
+            start: meal.vendor.dinnerStart,
+            end: meal.vendor.dinnerEnd,
+          };
+          break;
+        default:
+          timing = null;
+      }
+    }
+
+    // Prepare response data with timing information
+    const responseData = {
+      ...meal,
+      timing,
+    };
+
     res.status(200).json({
       success: true,
-      data: meal,
+      data: responseData,
     });
   } catch (error) {
     console.error("Error fetching meal by ID:", error);
@@ -685,6 +733,92 @@ export const getAddress = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+    });
+  }
+};
+
+// Delete user address
+export const deleteAddress = async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!addressId || isNaN(parseInt(addressId))) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid address ID is required",
+      });
+    }
+
+    // Check if the address exists and belongs to the user
+    const address = await prisma.userAddress.findFirst({
+      where: {
+        id: parseInt(addressId),
+        userId: userId,
+      },
+    });
+
+    if (!address) {
+      return res.status(404).json({
+        success: false,
+        message: "Address not found or doesn't belong to user",
+      });
+    }
+
+    // Check if this is the only address for the user
+    const userAddressCount = await prisma.userAddress.count({
+      where: { userId },
+    });
+
+    if (userAddressCount === 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete the only address. Please add another address first.",
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Delete the address
+      await tx.userAddress.delete({
+        where: { id: parseInt(addressId) },
+      });
+
+      // If the deleted address was default, set another address as default
+      if (address.isDefault) {
+        const firstRemainingAddress = await tx.userAddress.findFirst({
+          where: { userId },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (firstRemainingAddress) {
+          await tx.userAddress.update({
+            where: { id: firstRemainingAddress.id },
+            data: { isDefault: true },
+          });
+        }
+      }
+
+      return { deletedAddressId: parseInt(addressId) };
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Address deleted successfully.",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Delete Address Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
     });
   }
 };

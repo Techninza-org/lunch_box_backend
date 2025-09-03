@@ -12,6 +12,7 @@ import {
   addAddress,
   setDefaultAddress,
   getAddress,
+  deleteAddress,
   getUserNotifications,
   updateUserProfile,
   // getUserWallet,
@@ -54,6 +55,7 @@ router.post("/add-current-location", addUserCurrentLocation);
 router.post("/add-address", addAddress);
 router.get("/set-default-address/:addressId", setDefaultAddress);
 router.get("/get-addresses", getAddress);
+router.delete("/delete-address/:addressId", deleteAddress);
 router.get("/home", getHomePage);
 // Get all restaurants by user location
 router.get(

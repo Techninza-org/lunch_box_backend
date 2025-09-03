@@ -183,6 +183,8 @@ export const addVendorMeal = async (req, res) => {
       ingredients,
     } = req.body;
 
+    console.log("body", req.body);
+
     const mainFile = filesByField["mainImage"];
     const image = mainFile ? `/uploads/meals/${mainFile.filename}` : null;
 
@@ -203,7 +205,7 @@ export const addVendorMeal = async (req, res) => {
       fatGram: fatGram ? Number(fatGram) : undefined,
       fiberGram: fiberGram ? Number(fiberGram) : undefined,
       carbsGram: carbsGram ? Number(carbsGram) : undefined,
-      basePrice: basePrice ? Number(basePrice) : 0, // ✅ prevents NaN
+      basePrice: basePrice ? Number(basePrice) : undefined,
       isAvailable: true,
       isWeekly: isWeekly === "true" || isWeekly === "1",
 

@@ -109,6 +109,7 @@ model User {
   // WalletOrder WalletOrder[]
 
   Wishlist Wishlist[]
+  Rating   Rating[]
 }
 
 enum UserAddressType {
@@ -456,6 +457,7 @@ model Meal {
   isDeleted  Boolean   @default(false) // soft delete
   isVerified Boolean   @default(false) // for vendor verification
   deletedAt  DateTime? // soft delete timestamp
+  Rating     Rating[]
 }
 
 model MealAvailableDay {
@@ -848,5 +850,19 @@ model Wishlist {
   meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 
   @@unique([userId, mealId]) // prevents duplicate entries
+  @@index([userId])
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  mealId    Int
+  score     Int      @default(0) // Rating score (e.g., 1-5)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mealId]) // prevents duplicate ratings
   @@index([userId])
 }

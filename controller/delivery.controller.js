@@ -272,6 +272,75 @@ export const addOrUpdateDeliveryBankDetail = async (req, res) => {
 };
 
 // Get delivery partner meal schedules with time filters
+// Get delivery partner profile
+export const getDeliveryPartnerProfile = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+
+    if (!deliveryPartnerId) {
+      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+    }
+
+    // Get delivery partner profile with related data
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { id: deliveryPartnerId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phoneNumber: true,
+        phoneNumber2: true,
+        profileImage: true,
+        address: true,
+        city: true,
+        state: true,
+        zipCode: true,
+        latitude: true,
+        longitude: true,
+        isActive: true,
+        isVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        // Include related bank details
+        DeliveryBankDetail: {
+          select: {
+            id: true,
+            accountHolder: true,
+            accountNumber: true,
+            ifscCode: true,
+            bankName: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        // Include wallet information
+        DeliveryWallet: {
+          select: {
+            id: true,
+            balance: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!deliveryPartner) {
+      return res.status(404).json({ error: "Delivery partner not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile retrieved successfully",
+      data: deliveryPartner,
+    });
+
+  } catch (error) {
+    console.error("Error fetching delivery partner profile:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const getDeliveryPartnerOrders = async (req, res) => {
   try {
     const deliveryPartnerId = req.user?.id;
@@ -290,22 +359,22 @@ export const getDeliveryPartnerOrders = async (req, res) => {
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
         break;
-      
+
       case 'yesterday':
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
         endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
         break;
-      
+
       case 'lastWeek':
         startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
         endDate = now;
         break;
-      
+
       case 'lastMonth':
         startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
         endDate = now;
         break;
-      
+
       default:
         return res.status(400).json({ error: "Invalid filter. Use: today, yesterday, lastWeek, or lastMonth" });
     }

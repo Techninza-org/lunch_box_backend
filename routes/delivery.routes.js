@@ -11,14 +11,15 @@ import {
   getMealsByDeliveryPartner,
   updateDeliveryPartnerProfile,
   addOrUpdateDeliveryBankDetail,
-  getDeliveryPartnerOrders
+  getDeliveryPartnerOrders,
+  getDeliveryPartnerProfile
 } from "../controller/delivery.controller.js";
-import { 
+import {
   createSupportTicket,
   getSupportTickets,
   sendMessageToSupportTicket
 } from "../controller/support.controller.js";
-import { 
+import {
   createDeliveryWalletOrder,
   verifyDeliveryWalletPayment,
   getDeliveryWallet,
@@ -48,6 +49,8 @@ router.get("/", (req, res) => {
   res.json({ message: "Delivery list" });
 });
 
+// Profile management
+router.get("/get-profile", getDeliveryPartnerProfile);
 router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
 router.get("/orders", getDeliveryPartnerOrders);

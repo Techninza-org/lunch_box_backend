@@ -421,7 +421,7 @@ model Meal {
   id          Int            @id @default(autoincrement())
   vendorId    Int
   title       String // e.g., "Protein Thali"
-  description String? // e.g., "Includes dal, roti, sabzi"
+  description String?        @db.Text // e.g., "Includes dal, roti, sabzi"
   image       String? // main image thumbnail
   type        MealType // lunch or dinner
   configType  MealConfigType // SINGLE or CUSTOMIZABLE

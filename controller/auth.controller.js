@@ -652,6 +652,10 @@ export const vendorLogin = async (req, res) => {
       return res.status(404).json({ message: "Invalid email or password" });
     }
 
+    if (vendor.isDeleted == true || vendor.status === "PENDING") {
+      return res.status(403).json({ message: "Account is not active or pending approval" });
+    }
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, vendor.password);
     if (!isPasswordValid) {
@@ -934,7 +938,8 @@ export const deliveryPartnerLogin = async (req, res) => {
         .json({ message: "Invalid email or password or account not verified" });
     }
 
-    if (deliveryPartner.status === "PENDING" || deliveryPartner.isDeleted === true) {
+    // Check if the account is verified
+    if (!deliveryPartner.isVerified) {
       return res.status(403).json({ message: "Account not verified" });
     }
 

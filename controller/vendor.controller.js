@@ -227,10 +227,61 @@ export const toggleVendorActive = async (req, res) => {
   }
 
   try {
-    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: {
+        VendorBankDetail: true,
+      }
+    });
 
-    if (!vendor || vendor.isDeleted) {
-      return res.status(404).json({ message: "Vendor not found or deleted" });
+    if (!vendor || vendor.isDeleted || vendor.status === "PENDING") {
+      return res.status(404).json({ message: "Can Not Able Active, Contact Admin" });
+    }
+
+    // Check if vendor has completed all required information
+    const missingFields = [];
+
+    // Check basic profile information
+    if (!vendor.businessName) {
+      missingFields.push("Business Name");
+    }
+    if (!vendor.description) {
+      missingFields.push("Description");
+    }
+    if (!vendor.logo) {
+      missingFields.push("Logo");
+    }
+    if (!vendor.address || !vendor.city || !vendor.state) {
+      missingFields.push("Complete Address (Address, City, State)");
+    }
+
+    // Check if vendor has uploaded all required documents
+
+    // Check if vendor has set up time windows for all meal types
+    if (!vendor.breakfastStart || !vendor.breakfastEnd) {
+      missingFields.push("Breakfast Timings");
+    }
+    if (!vendor.lunchStart || !vendor.lunchEnd) {
+      missingFields.push("Lunch Timings");
+    }
+    if (!vendor.eveningStart || !vendor.eveningEnd) {
+      missingFields.push("Evening Snacks Timings");
+    }
+    if (!vendor.dinnerStart || !vendor.dinnerEnd) {
+      missingFields.push("Dinner Timings");
+    }
+
+    // Check if vendor has bank details
+    if (!vendor.VendorBankDetail) {
+      missingFields.push("Bank Details");
+    }
+
+    // If there are missing fields, return error with details
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: "Please complete all required information before activating your account",
+        missingFields: missingFields
+      });
     }
 
     const updatedVendor = await prisma.vendor.update({
@@ -247,9 +298,7 @@ export const toggleVendorActive = async (req, res) => {
     });
 
     res.status(200).json({
-      message: `Vendor is now ${
-        updatedVendor.isActive ? "active" : "inactive"
-      }`,
+      message: `Vendor is now ${updatedVendor.isActive ? "active" : "inactive"}`,
       vendor: updatedVendor,
     });
   } catch (err) {
@@ -474,19 +523,19 @@ export const getVendorStats = async (req, res) => {
     // Compute average completion time (minutes)
     const avgCompletionTimeMinutes = completedForTiming.length
       ? +(
-          completedForTiming.reduce(
-            (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
-            0
-          ) / completedForTiming.length
-        ).toFixed(2)
+        completedForTiming.reduce(
+          (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
+          0
+        ) / completedForTiming.length
+      ).toFixed(2)
       : 0;
     const avgCancellationTimeMinutes = cancelledForTiming.length
       ? +(
-          cancelledForTiming.reduce(
-            (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
-            0
-          ) / cancelledForTiming.length
-        ).toFixed(2)
+        cancelledForTiming.reduce(
+          (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
+          0
+        ) / cancelledForTiming.length
+      ).toFixed(2)
       : 0;
 
     return res.status(200).json({
@@ -627,19 +676,19 @@ export const getVendorPerformanceStats = async (req, res) => {
     // Average completion / cancellation times (minutes)
     const avgCompletionTimeMinutes = completedOrders
       ? +(
-          ordersCompleted.reduce(
-            (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
-            0
-          ) / completedOrders
-        ).toFixed(2)
+        ordersCompleted.reduce(
+          (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
+          0
+        ) / completedOrders
+      ).toFixed(2)
       : 0;
     const avgCancellationTimeMinutes = cancelledOrders
       ? +(
-          ordersCancelled.reduce(
-            (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
-            0
-          ) / cancelledOrders
-        ).toFixed(2)
+        ordersCancelled.reduce(
+          (sum, o) => sum + (o.updatedAt - o.createdAt) / 60000,
+          0
+        ) / cancelledOrders
+      ).toFixed(2)
       : 0;
 
     // Prep time calculations based on MEAL SCHEDULES (DELIVERED)
@@ -837,3 +886,5 @@ export const createVendorRequestWithdrawal = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+

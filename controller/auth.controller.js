@@ -670,7 +670,7 @@ export const vendorLogin = async (req, res) => {
       { id: vendor.id, role: "VENDOR" },
       process.env.JWT_SECRET,
       {
-        expiresIn: "7d",
+        expiresIn: "14d",
       }
     );
 

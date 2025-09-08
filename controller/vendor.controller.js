@@ -798,21 +798,21 @@ export const getVendorPerformanceStats = async (req, res) => {
       //     : 0,
       // },
       complaints: {
-        totalComplaints,
-        complaintsPct,
-        ordersWithComplaints: totalComplaints, // assumption: each ticket maps to max one order
-        open: openComplaints,
-        inProgress: inProgressComplaints,
-        resolved: resolvedComplaints,
-        closed: closedComplaints,
-        unresolvedComplaints,
-        customerRefundedComplaints: 0, // refund linkage not implemented
-        nonRefundedComplaints: 0,
+        "Total Complaints": totalComplaints,
+        "Complaints %": complaintsPct,
+        "Orders with Complaints": totalComplaints, // assumption: each ticket maps to max one order\r
+        "Open": openComplaints,
+        "In Progress": inProgressComplaints,
+        "Resolved": resolvedComplaints,
+        "Closed": closedComplaints,
+        "Unresolved Complaints": unresolvedComplaints,
+        // customerRefundedComplaints: 0, // refund linkage not implemented
+        // nonRefundedComplaints: 0,
       },
       // Added explicit order (bolt) style stats section
       orders: {
-        total: totalOrders,
-        completed: completedOrders,
+        "Total": totalOrders,
+        "Completed": completedOrders,
         fastOrders: fastPrepOrders,
         fastOrdersPct: deliveredSchedules.length
           ? +((fastPrepOrders / deliveredSchedules.length) * 100).toFixed(2)

@@ -22,14 +22,16 @@ import {
   removeFromWishlist,
   getUserWishlist,
   getFilteredMeals,
-  
+  getMealsByType,
+  debugMealData, // Add this import
+
 } from "../controller/user.controller.js";
 
-import { 
+import {
   createSupportTicket,
   getSupportTickets,
   sendMessageToSupportTicket
- } from "../controller/support.controller.js";
+} from "../controller/support.controller.js";
 
 import {
   addToCart,
@@ -71,6 +73,12 @@ router.get("/meals/search", searchMeals);
 router.get("/meals/:id", getMealById);
 router.get("/meals", getVendorsByMealType);
 router.get("/get-filtered-meals/:vendorId", getFilteredMeals);
+
+// New route for getting meals by type
+router.get("/meals/type/:type", getMealsByType);
+
+// Debug route to understand meal data
+router.get("/debug/meal-data", debugMealData);
 
 // CART ROUTES
 // Add meal to cart (handles both single and customizable meals)
@@ -116,8 +124,5 @@ router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSuppo
 router.post("/add-user-wishlist", addToWishlist);
 router.delete("/remove-user-wishlist", removeFromWishlist);
 router.get("/get-all-user-wishlist", getUserWishlist);
-
-
-
 
 export default router;

@@ -167,7 +167,7 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
 export const getRestaurantsById = async (req, res) => {
   try {
     const { id } = req.params;
-console.log(id);
+    console.log(id);
     if (!id) {
       return res.status(400).json({
         success: false,
@@ -626,7 +626,7 @@ export const addAddress = async (req, res) => {
       return newAddress;
     });
 
-    const message = existingAddresses.length === 0 
+    const message = existingAddresses.length === 0
       ? "Address added successfully and set as default."
       : "Address added successfully.";
 
@@ -665,9 +665,9 @@ export const setDefaultAddress = async (req, res) => {
 
     // Check if the address exists and belongs to the user
     const address = await prisma.userAddress.findFirst({
-      where: { 
+      where: {
         id: parseInt(addressId),
-        userId: userId 
+        userId: userId
       },
     });
 
@@ -1053,6 +1053,116 @@ export const getVendorsByMealType = async (req, res) => {
   }
 };
 
+export const getMealsByType = async (req, res) => {
+  try {
+    const { type } = req.params;
+
+    // Validate meal type
+    const validMealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Evening'];
+    if (!validMealTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid meal type. Valid types are: Breakfast, Lunch, Dinner, Evening",
+      });
+    }
+
+    // Fetch meals of the specified type with minimal filters
+    const meals = await prisma.meal.findMany({
+      where: {
+        type: type,
+        isAvailable: true,
+        isDeleted: false,
+        // Remove verification and vendor status filters for now
+      },
+      include: {
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            logo: true,
+            // Include timing information based on meal type
+            breakfastStart: true,
+            breakfastEnd: true,
+            lunchStart: true,
+            lunchEnd: true,
+            eveningStart: true,
+            eveningEnd: true,
+            dinnerStart: true,
+            dinnerEnd: true,
+          },
+        },
+        mealImages: true,
+        mealOptionGroups: {
+          include: {
+            options: true,
+          },
+        },
+        availableDays: true,
+        dietaryTags: true,
+        ingredients: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Add timing information to each meal based on its type
+    const mealsWithTiming = meals.map(meal => {
+      if (meal.vendor) {
+        let timing = null;
+        switch (meal.type) {
+          case "Breakfast":
+            timing = {
+              start: meal.vendor.breakfastStart,
+              end: meal.vendor.breakfastEnd,
+            };
+            break;
+          case "Lunch":
+            timing = {
+              start: meal.vendor.lunchStart,
+              end: meal.vendor.lunchEnd,
+            };
+            break;
+          case "Evening":
+            timing = {
+              start: meal.vendor.eveningStart,
+              end: meal.vendor.eveningEnd,
+            };
+            break;
+          case "Dinner":
+            timing = {
+              start: meal.vendor.dinnerStart,
+              end: meal.vendor.dinnerEnd,
+            };
+            break;
+          default:
+            timing = null;
+        }
+
+        return {
+          ...meal,
+          timing,
+        };
+      }
+      return meal;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: mealsWithTiming,
+      count: mealsWithTiming.length,
+    });
+  } catch (error) {
+    console.error("Error fetching meals by type:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message, // Include error message for debugging
+    });
+  }
+};
+
 export const addToWishlist = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -1133,7 +1243,7 @@ export const getFilteredMeals = async (req, res) => {
       return res.status(400).json({ success: false, message: "Vendor ID required" });
     }
 
-    const { isVeg, cuisine, sort } = req.query; 
+    const { isVeg, cuisine, sort } = req.query;
     // Example: ?isVeg=true&cuisine=Indian&sort=price_desc
 
     // Build filter conditions
@@ -1148,7 +1258,8 @@ export const getFilteredMeals = async (req, res) => {
     }
 
     if (cuisine) {
-      filters.cuisine = { contains: cuisine, 
+      filters.cuisine = {
+        contains: cuisine,
         // mode: "insensitive" 
       };
     }
@@ -1194,4 +1305,59 @@ export const getFilteredMeals = async (req, res) => {
   }
 };
 
-  
+export const debugMealData = async (req, res) => {
+  try {
+    // Get counts of different meal types
+    const mealTypeCounts = await prisma.meal.groupBy({
+      by: ['type'],
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Get counts of meals by availability
+    const availabilityCounts = await prisma.meal.groupBy({
+      by: ['isAvailable'],
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Get counts of meals by verification status
+    const verificationCounts = await prisma.meal.groupBy({
+      by: ['isVerified'],
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Get counts of meals by deletion status
+    const deletionCounts = await prisma.meal.groupBy({
+      by: ['isDeleted'],
+      _count: {
+        _all: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        mealTypeCounts,
+        availabilityCounts,
+        verificationCounts,
+        deletionCounts,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching debug meal data:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+
+

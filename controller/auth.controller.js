@@ -63,8 +63,8 @@ export const adminRegister = async (req, res) => {
     subName !== undefined
       ? subName
       : subname !== undefined
-      ? subname
-      : null;
+        ? subname
+        : null;
 
   try {
     const existingAdmin = await prisma.admin.findUnique({
@@ -845,8 +845,8 @@ export const deliveryPartnerRegister = async (req, res) => {
       : null;
     const documentImages = filesByField["documents"]
       ? filesByField["documents"].map(
-          (file) => `uploads/delivery-partners/${file.filename}`
-        )
+        (file) => `uploads/delivery-partners/${file.filename}`
+      )
       : [];
 
     // Validate profile image and document images
@@ -933,8 +933,8 @@ export const deliveryPartnerLogin = async (req, res) => {
         .status(404)
         .json({ message: "Invalid email or password or account not verified" });
     }
-    // Check if the account is verified
-    if (!deliveryPartner.isVerified) {
+
+    if (deliveryPartner.status === "PENDING" || deliveryPartner.isDeleted === true) {
       return res.status(403).json({ message: "Account not verified" });
     }
 
@@ -955,7 +955,7 @@ export const deliveryPartnerLogin = async (req, res) => {
       { id: deliveryPartner.id, role: "DELIVERY" },
       process.env.JWT_SECRET,
       {
-        expiresIn: "7d",
+        expiresIn: "14d",
       }
     );
 

@@ -63,7 +63,7 @@ export const getHomePage = async (req, res) => {
     const banners = await prisma.banner.findMany();
 
     const vendors = await prisma.vendor.findMany({
-      where: { status: "APPROVED" },
+      where: { status: "APPROVED", isDeleted: false, isActive: true },
       select: {
         id: true,
         name: true,
@@ -129,6 +129,11 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
       //     latitude: user.latitude,
       //     longitude: user.longitude,
       //   },
+      where: {
+        isActive: true,
+        status: "APPROVED",
+        isDeleted: false,
+      },
       select: {
         id: true,
         name: true,

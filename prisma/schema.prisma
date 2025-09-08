@@ -529,6 +529,12 @@ model Banner {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isActive    Boolean  @default(true)
+  audience    BannerAudience @default(USER)
+}
+
+enum BannerAudience {
+  USER
+  DELIVERY_PARTNER
 }
 
 // CART MODELS

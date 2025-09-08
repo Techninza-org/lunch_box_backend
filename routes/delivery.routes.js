@@ -9,6 +9,7 @@ import {
 import {
   getDeliveryNotifications,
   getMealsByDeliveryPartner,
+  getDeliveryBanners,
   updateDeliveryPartnerProfile,
   addOrUpdateDeliveryBankDetail,
   getDeliveryPartnerOrders,
@@ -51,6 +52,7 @@ router.get("/", (req, res) => {
 
 // Profile management
 router.get("/get-profile", getDeliveryPartnerProfile);
+router.get("/banners", getDeliveryBanners);
 router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
 router.get("/orders", getDeliveryPartnerOrders);

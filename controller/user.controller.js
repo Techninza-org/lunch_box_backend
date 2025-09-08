@@ -59,8 +59,8 @@ export const addUserCurrentLocation = async (req, res) => {
 // Get home page
 export const getHomePage = async (req, res) => {
   try {
-    // Fetch necessary data for the home page
-    const banners = await prisma.banner.findMany();
+  // Fetch necessary data for the home page (user audience banners only)
+  const banners = await prisma.banner.findMany({ where: { audience: "USER", isActive: true } });
 
     const vendors = await prisma.vendor.findMany({
       where: { status: "APPROVED", isDeleted: false, isActive: true },

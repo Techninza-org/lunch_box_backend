@@ -367,6 +367,8 @@ export const getVendorNotifications = async (req, res) => {
   }
 };
 
+
+
 export const searchMeals = async (req, res) => {
   const { query } = req.query;
 

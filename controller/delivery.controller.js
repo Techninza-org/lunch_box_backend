@@ -14,6 +14,16 @@ function indexFiles(files) {
   return map;
 }
 
+export const getDeliveryBanners = async (req, res) => {
+  try {
+    const banners = await prisma.banner.findMany({ where: { audience: "DELIVERY_PARTNER", isActive: true } });
+    return res.status(200).json({ success: true, data: banners });
+  } catch (error) {
+    console.error("Error fetching delivery banners:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 export const getDeliveryNotifications = async (req, res) => {
   const deliveryId = req.user?.id;
 

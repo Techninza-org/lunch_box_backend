@@ -15,7 +15,6 @@ import {
   deleteAddress,
   getUserNotifications,
   updateUserProfile,
-  // getUserWallet,
   getUserProfile,
   getVendorsByMealType,
   addToWishlist,

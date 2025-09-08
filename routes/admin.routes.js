@@ -34,6 +34,7 @@ import {
   getAllMealsGroupedByVerification,
   toggleMealAvailability,
   getAllNotifications,
+  sendCustomNotification,
   getAllSupportTicketsGroupedById,
   getAllAdmin,
   softdeleteAdmin,
@@ -69,14 +70,14 @@ router.delete("/soft-delete-admin/:id", softdeleteAdmin);
 // Banner CRUD routes
 router.post(
   "/add-banner",
-  getMulterUpload("banners").single("image"),
+  getMulterUpload("banners").any(),
   addbanner
 );
 router.get("/banners", getBanners); // Get all banners
 router.get("/banners/:id", getBannerById); // Get banner by ID
 router.put(
   "/banners/:id",
-  getMulterUpload("banners").single("image"),
+  getMulterUpload("banners").any(),
   updateBanner
 ); // Update banner
 router.delete("/banners/:id", deleteBanner); // Delete banner
@@ -118,6 +119,7 @@ router.delete("/hard-delete-delivery-partner/:id", hardDeleteDeliveryPartner);
 //----------Settings---------//
 router.post("/update-settings", upsertSettings);
 router.get("/get-all-notifications", getAllNotifications);
+router.post("/send-notification", sendCustomNotification);
 
 //----------Orders Management---------//
 router.get("/orders", getAllOrdersAdmin);

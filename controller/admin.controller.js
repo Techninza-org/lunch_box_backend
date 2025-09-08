@@ -58,12 +58,25 @@ export const softdeleteAdmin = async (req, res) => {
 
 
 
+function indexFiles(files) {
+  const map = {};
+  if (!files) return map;
+  for (const file of files) {
+    if (!map[file.fieldname]) map[file.fieldname] = [];
+    map[file.fieldname].push(file);
+  }
+  return map;
+}
+
 export const addbanner = async (req, res) => {
   try {
-    const { title, description } = req.body;
-    const image = req.file ? req.file.filename : null;
+  const { title, description } = req.body;
+  const audienceRaw = (req.body?.audience ?? req.body?.audiance ?? null);
+    const filesByField = indexFiles(req.files);
+    const imageFile = (filesByField["image"]?.[0]) || (filesByField["banner"]?.[0]) || (filesByField["file"]?.[0]) || null;
+    const image = imageFile ? imageFile.filename : null;
 
-    if (!title || !description || !image) {
+  if (!title || !description || !image) {
       return res.status(400).json({
         success: false,
         message: "Title, description, and image are required",
@@ -72,11 +85,21 @@ export const addbanner = async (req, res) => {
 
     const img = `uploads/banners/${image.split("/").pop()}`;
 
+    // normalize audience
+    let bannerAudience = "USER";
+    if (audienceRaw) {
+      const a = String(audienceRaw).toUpperCase();
+      if (["USER", "DELIVERY", "DELIVERY_PARTNER"].includes(a)) {
+        bannerAudience = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
+      }
+    }
+
     const newBanner = await prisma.banner.create({
       data: {
         title,
         description,
         image: img,
+        audience: bannerAudience,
       },
     });
 
@@ -97,7 +120,16 @@ export const addbanner = async (req, res) => {
 // Get all banners
 export const getBanners = async (req, res) => {
   try {
-    const banners = await prisma.banner.findMany();
+    const audienceParam = (req.query?.audience ?? req.query?.audiance ?? null);
+    let where = undefined;
+    if (audienceParam) {
+      const a = String(audienceParam).toUpperCase();
+      const normalized = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
+      if (["USER", "DELIVERY_PARTNER"].includes(normalized)) {
+        where = { audience: normalized };
+      }
+    }
+    const banners = await prisma.banner.findMany({ where });
     res.status(200).json({ success: true, data: banners });
   } catch (error) {
     console.error("Error fetching banners:", error);
@@ -129,14 +161,24 @@ export const updateBanner = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
+    const audienceRaw = (req.body?.audience ?? req.body?.audiance ?? null);
+    const filesByField = indexFiles(req.files);
     let image;
-    if (req.file) {
-      image = `uploads/banners/${req.file.filename}`;
+    const imageFile = (filesByField["image"]?.[0]) || (filesByField["banner"]?.[0]) || (filesByField["file"]?.[0]) || null;
+    if (imageFile) {
+      image = `uploads/banners/${imageFile.filename}`;
     }
     const data = {};
     if (title) data.title = title;
     if (description) data.description = description;
     if (image) data.image = image;
+    if (audienceRaw) {
+      const a = String(audienceRaw).toUpperCase();
+      const normalized = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
+      if (["USER", "DELIVERY_PARTNER"].includes(normalized)) {
+        data.audience = normalized;
+      }
+    }
     const updated = await prisma.banner.update({
       where: { id: Number(id) },
       data,
@@ -1255,6 +1297,58 @@ export const getAllNotifications = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// custom notification: send to specific user (any role) and/or broadcast by role
+export const sendCustomNotification = async (req, res) => {
+  const { role, userId, title, message } = req.body || {};
+
+  try {
+    // Basic validation
+    if (!title || !message) {
+      return res.status(400).json({ error: "title and message are required" });
+    }
+
+    if (!role && !userId) {
+      return res.status(400).json({ error: "Provide at least one target: role or userId" });
+    }
+
+    // Normalize/validate role (optional)
+    let normalizedRole = null;
+    if (role) {
+      const roleUpper = String(role).toUpperCase();
+      if (roleUpper === "DELIVERY") {
+        normalizedRole = "DELIVERY_PARTNER"; // map common alias to enum value
+      } else if (["USER", "VENDOR", "DELIVERY_PARTNER", "ADMIN"].includes(roleUpper)) {
+        normalizedRole = roleUpper;
+      } else {
+        return res.status(400).json({ error: "Invalid role. Use USER, VENDOR, DELIVERY_PARTNER, or ADMIN" });
+      }
+    }
+
+    const parsedUserId = userId !== undefined && userId !== null && userId !== ""
+      ? parseInt(userId)
+      : null;
+    if (parsedUserId !== null && isNaN(parsedUserId)) {
+      return res.status(400).json({ error: "userId must be a number" });
+    }
+
+    // Create notification (supports: user-only, role-only, or both)
+    const notification = await prisma.notification.create({
+      data: {
+        title,
+        message,
+        role: normalizedRole,
+        userId: parsedUserId,
+      },
+    });
+
+    return res.status(201).json({ message: "Notification sent", data: notification });
+  } catch (error) {
+    console.error("Error sending notification:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 
 export const getAllSupportTicketsGroupedById = async (req, res) => {
   try {

@@ -18,7 +18,9 @@ export const createOrder = async (req, res) => {
       deliveryAddressId,
       subscriptionStartDate,
       orderNotes,
-      walletTransactionId
+      walletTransactionId,
+      finalpaymentAmount,
+      finaldeliveryCharges,
     } = req.body;
 
     // Validate required fields
@@ -33,6 +35,20 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Delivery address is required",
+      });
+    }
+
+    if (!finaldeliveryCharges || isNaN(parseInt(finaldeliveryCharges))) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid delivery charges is required",
+      });
+    }
+
+    if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid payment amount is required",
       });
     }
 
@@ -83,10 +99,16 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    // get settings for delivery charges
+    const setting = await prisma.settings.findFirst();
+    const perKmDeliveryCharge = setting?.deliveryChargePerKm || 0;
+
+
+
     // Calculate pricing
-    const subtotal = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const deliveryCharges = subtotal > 500 ? 0 : 50; // Free delivery above ₹500
-    const taxes = Math.round(subtotal * 0.05 * 100) / 100; // 5% tax
+    const subtotal = finalpaymentAmount || cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const deliveryCharges = finaldeliveryCharges;
+    const taxes = 0;
     const discount = 0; // Can be implemented later
     const totalAmount = subtotal + deliveryCharges + taxes - discount;
 

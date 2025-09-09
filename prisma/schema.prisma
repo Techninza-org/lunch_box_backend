@@ -31,28 +31,28 @@ model Admin {
 }
 
 model DeliveryPartner {
-  id             Int       @id @default(autoincrement())
-  name           String
-  email          String    @unique
-  password       String
-  phoneNumber    String    @unique
-  isActive       Boolean   @default(false)
-  isVerified     Boolean   @default(false)
-  profileImage   String?
-  identification String?
-  longitude      Float?
-  latitude       Float?
-  address        String?
-  city           String?
-  state          String?
-  zipCode        String?
-  phoneNumber2   String?
-  otp            String?   @db.VarChar(100)
-  otp_expiry     DateTime? @db.DateTime
-  otp_verified   Boolean?  @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
+  id                              Int                               @id @default(autoincrement())
+  name                            String
+  email                           String                            @unique
+  password                        String
+  phoneNumber                     String                            @unique
+  isActive                        Boolean                           @default(false)
+  isVerified                      Boolean                           @default(false)
+  profileImage                    String?
+  identification                  String?
+  longitude                       Float?
+  latitude                        Float?
+  address                         String?
+  city                            String?
+  state                           String?
+  zipCode                         String?
+  phoneNumber2                    String?
+  otp                             String?                           @db.VarChar(100)
+  otp_expiry                      DateTime?                         @db.DateTime
+  otp_verified                    Boolean?                          @default(false)
+  createdAt                       DateTime                          @default(now())
+  updatedAt                       DateTime                          @updatedAt
+  fcmToken                        String?
   // Relations
   Order                           Order[]
   isDeleted                       Boolean                           @default(false)
@@ -96,6 +96,7 @@ model User {
   otp_verified Boolean?      @default(false)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  fcmToken     String?
   UserAddress  UserAddress[]
   CartItem     CartItem[]
   Order        Order[]
@@ -223,6 +224,8 @@ model Vendor {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  fcmToken String?
+
   // Relations
   VendorWallet            VendorWallet[]
   VendorWalletTransaction VendorWalletTransaction[]
@@ -334,7 +337,7 @@ model AdminWalletTransaction {
 }
 
 model Settings {
-  id                        Int   @id @default(autoincrement())
+  id                        Int    @id @default(autoincrement())
   gst                       Float?
   vendorCommission          Float?
   deliveryPartnerCommission Float?
@@ -523,13 +526,13 @@ model MealIngredient {
 }
 
 model Banner {
-  id          Int      @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   image       String // URL of the banner image
   title       String? // Optional title for the banner
   description String? // Optional description
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isActive    Boolean  @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  isActive    Boolean        @default(true)
   audience    BannerAudience @default(USER)
 }
 

@@ -21,7 +21,6 @@ export const saveNotification = async ({ title, message, userId = null, role = n
         title,
         message,
         userId,
-        
         role,
       },
     });

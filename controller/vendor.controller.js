@@ -760,91 +760,79 @@ export const getVendorPerformanceStats = async (req, res) => {
     res.status(200).json({
       dateRange: { from: from || null, to: to || null },
       menu: {
-        score: menuScore,
-        itemsWithPhotosPct: totalMeals
+        "Score": menuScore,
+        "Items With Photos %": totalMeals
           ? +((mealsWithImages / totalMeals) * 100).toFixed(2)
           : 0,
-        itemsWithDescriptionsPct: totalMeals
+        "Items With Descriptions %": totalMeals
           ? +((mealsWithDescription / totalMeals) * 100).toFixed(2)
           : 0,
-        customizableMeals,
-        vegMeals,
-        nonVegMeals,
-        totalMeals,
+        "Customizable Meals": customizableMeals,
+        "Veg Meals": vegMeals,
+        "Non-Veg Meals": nonVegMeals,
+        "Total Meals": totalMeals,
       },
       sales: {
-        grossSales: +grossSales.toFixed(2),
-        totalOrders,
-        pendingOrders,
-        confirmedOrders,
-        completedOrders,
-        cancelledOrders,
-        completionRatePct,
-        cancellationRatePct,
-        cancelledOrderLoss: +cancelledOrdersLoss.toFixed(2),
-        grossAOV: +grossAOV.toFixed(2),
-        avgCompletionTimeMinutes,
-        avgCancellationTimeMinutes,
+        "Gross Sales": +grossSales.toFixed(2),
+        "Total Orders": totalOrders,
+        "Pending Orders": pendingOrders,
+        "Confirmed Orders": confirmedOrders,
+        "Completed Orders": completedOrders,
+        "Cancelled Orders": cancelledOrders,
+        "Completion Rate %": completionRatePct,
+        "Cancellation Rate %": cancellationRatePct,
+        "Cancelled Order Loss": +cancelledOrdersLoss.toFixed(2),
+        "Gross AOV": +grossAOV.toFixed(2),
+        "Avg Completion Time Minutes": avgCompletionTimeMinutes,
+        "Avg Cancellation Time Minutes": avgCancellationTimeMinutes,
       },
       customers: {
-        newCustomers,
-        repeatCustomers,
-        repeatCustomerOrderPct:
+        "New Customers": newCustomers,
+        "Repeat Customers": repeatCustomers,
+        "Repeat Customer Order %":
           repeatCustomers && ordersAll.length
             ? +((repeatCustomers / ordersAll.length) * 100).toFixed(2)
             : 0,
-        dormantCustomers: 0,
-        newCustomerOrderPct:
+        "Dormant Customers": 0,
+        "New Customer Order %":
           newCustomers && ordersAll.length
             ? +((newCustomers / ordersAll.length) * 100).toFixed(2)
             : 0,
-        dormantCustomerOrderPct: 0,
+        "Dormant Customer Order %": 0,
       },
-      // operations: {
-      //   onlineAvailabilityPct,
-      //   // replaced placeholder with actual average where possible
-      //   kitchenPrepTimeMin: +avgPrepTimeMin.toFixed(2),
-      //   foodReadyAccuracyPct,
-      //   delayedOrdersPct: deliveredSchedules.length
-      //     ? +((delayedOrders / deliveredSchedules.length) * 100).toFixed(2)
-      //     : 0,
-      // },
       complaints: {
         "Total Complaints": totalComplaints,
         "Complaints %": complaintsPct,
-        "Orders with Complaints": totalComplaints, // assumption: each ticket maps to max one order\r
+        "Orders with Complaints": totalComplaints,
         "Open": openComplaints,
         "In Progress": inProgressComplaints,
         "Resolved": resolvedComplaints,
         "Closed": closedComplaints,
         "Unresolved Complaints": unresolvedComplaints,
-        // customerRefundedComplaints: 0, // refund linkage not implemented
-        // nonRefundedComplaints: 0,
       },
-      // Added explicit order (bolt) style stats section
       orders: {
         "Total": totalOrders,
         "Completed": completedOrders,
-        fastOrders: fastPrepOrders,
-        fastOrdersPct: deliveredSchedules.length
+        "Fast Orders": fastPrepOrders,
+        "Fast Orders %": deliveredSchedules.length
           ? +((fastPrepOrders / deliveredSchedules.length) * 100).toFixed(2)
           : 0,
-        aov: +grossAOV.toFixed(2),
-        avgPrepTimeMin: +avgPrepTimeMin.toFixed(2),
-        ordersUnder6MinPct: deliveredSchedules.length
+        "AOV": +grossAOV.toFixed(2),
+        "Avg Prep Time Minutes": +avgPrepTimeMin.toFixed(2),
+        "Orders Under 6 Min %": deliveredSchedules.length
           ? +((fastPrepOrders / deliveredSchedules.length) * 100).toFixed(2)
           : 0,
-        delayedOrders,
-        delayedOrdersPct: deliveredSchedules.length
+        "Delayed Orders": delayedOrders,
+        "Delayed Orders %": deliveredSchedules.length
           ? +((delayedOrders / deliveredSchedules.length) * 100).toFixed(2)
           : 0,
-        pending: pendingOrders,
-        confirmed: confirmedOrders,
-        cancelled: cancelledOrders,
-        completionRatePct,
-        cancellationRatePct,
-        avgCompletionTimeMinutes,
-        avgCancellationTimeMinutes,
+        "Pending": pendingOrders,
+        "Confirmed": confirmedOrders,
+        "Cancelled": cancelledOrders,
+        "Completion Rate %": completionRatePct,
+        "Cancellation Rate %": cancellationRatePct,
+        "Avg Completion Time Minutes": avgCompletionTimeMinutes,
+        "Avg Cancellation Time Minutes": avgCancellationTimeMinutes,
       },
     });
   } catch (error) {

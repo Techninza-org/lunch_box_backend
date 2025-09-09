@@ -1300,49 +1300,77 @@ export const getAllNotifications = async (req, res) => {
 
 // custom notification: send to specific user (any role) and/or broadcast by role
 export const sendCustomNotification = async (req, res) => {
-  const { role, userId, title, message } = req.body || {};
+  const { role, userId, userIds, title, message } = req.body || {};
 
   try {
-    // Basic validation
+    // Validate required fields
     if (!title || !message) {
       return res.status(400).json({ error: "title and message are required" });
     }
 
-    if (!role && !userId) {
-      return res.status(400).json({ error: "Provide at least one target: role or userId" });
-    }
-
-    // Normalize/validate role (optional)
+    // Normalize / validate role (optional)
     let normalizedRole = null;
     if (role) {
       const roleUpper = String(role).toUpperCase();
-      if (roleUpper === "DELIVERY") {
-        normalizedRole = "DELIVERY_PARTNER"; // map common alias to enum value
-      } else if (["USER", "VENDOR", "DELIVERY_PARTNER", "ADMIN"].includes(roleUpper)) {
-        normalizedRole = roleUpper;
-      } else {
-        return res.status(400).json({ error: "Invalid role. Use USER, VENDOR, DELIVERY_PARTNER, or ADMIN" });
+      if (roleUpper === "DELIVERY") normalizedRole = "DELIVERY_PARTNER";
+      else if (["USER", "VENDOR", "DELIVERY_PARTNER", "ADMIN"].includes(roleUpper)) normalizedRole = roleUpper;
+      else return res.status(400).json({ error: "Invalid role. Use USER, VENDOR, DELIVERY_PARTNER, or ADMIN" });
+    }
+
+    // Support single userId OR multiple userIds
+    let targetUserIds = [];
+
+    if (userIds && Array.isArray(userIds)) {
+      targetUserIds = userIds
+        .map(u => parseInt(u))
+        .filter(v => !isNaN(v));
+      if (targetUserIds.length === 0) {
+        return res.status(400).json({ error: "userIds must contain at least one valid number" });
       }
+    } else if (userId !== undefined && userId !== null && userId !== "") {
+      const single = parseInt(userId);
+      if (isNaN(single)) return res.status(400).json({ error: "userId must be a number" });
+      targetUserIds = [single];
     }
 
-    const parsedUserId = userId !== undefined && userId !== null && userId !== ""
-      ? parseInt(userId)
-      : null;
-    if (parsedUserId !== null && isNaN(parsedUserId)) {
-      return res.status(400).json({ error: "userId must be a number" });
+    if (!normalizedRole && targetUserIds.length === 0) {
+      return res.status(400).json({ error: "Provide at least one target: role or userId(s)" });
     }
 
-    // Create notification (supports: user-only, role-only, or both)
-    const notification = await prisma.notification.create({
-      data: {
-        title,
-        message,
-        role: normalizedRole,
-        userId: parsedUserId,
-      },
-    });
+    // CASE 1: Broadcast to a role (no specific userIds)
+    if (normalizedRole && targetUserIds.length === 0) {
+      const notification = await prisma.notification.create({
+        data: {
+          title,
+            message,
+          role: normalizedRole,
+          userId: null,
+        },
+      });
+      return res.status(201).json({ message: "Role broadcast created", data: [notification] });
+    }
 
-    return res.status(201).json({ message: "Notification sent", data: notification });
+    // CASE 2: Multiple (or single) specific users
+    const created = [];
+    for (const uid of targetUserIds) {
+      const notif = await prisma.notification.create({
+        data: {
+          title,
+          message,
+          role: normalizedRole || null, // keep role if provided, else null (direct user notification)
+          userId: uid,
+        },
+      });
+      created.push(notif);
+    }
+
+    return res
+      .status(201)
+      .json({
+        message: `Notification sent to ${created.length} user(s)${normalizedRole ? " (role tag applied)" : ""}`,
+        count: created.length,
+        data: created,
+      });
   } catch (error) {
     console.error("Error sending notification:", error);
     return res.status(500).json({ error: "Internal Server Error" });

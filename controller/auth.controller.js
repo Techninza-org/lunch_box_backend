@@ -374,11 +374,18 @@ export const userLogin = async (req, res) => {
       return res.status(404).json({ message: "Invalid email or password" });
     }
 
+    // Block if user is soft deleted
+    if (user.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+
+
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+
 
     // Exclude password from response
     const { password: _, ...userData } = user;
@@ -936,6 +943,11 @@ export const deliveryPartnerLogin = async (req, res) => {
       return res
         .status(404)
         .json({ message: "Invalid email or password or account not verified" });
+    }
+
+    // Block if delivery partner is soft deleted
+    if (deliveryPartner.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
     }
 
     // Check if the account is verified

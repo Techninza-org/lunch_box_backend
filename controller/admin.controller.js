@@ -1136,7 +1136,7 @@ export const toggleSoftDeleteDeliveryPartner = async (req, res) => {
     const deliveryPartner = await prisma.deliveryPartner.findUnique({ where: { id } });
 
     if (!deliveryPartner) {
-      return res.status(404).json({ error: "deliveryPartner not found" });
+      return res.status(404).json({ error: "Delivery partner not found" });
     }
 
     const toggledDeliveryPartner = await prisma.deliveryPartner.update({
@@ -1144,13 +1144,18 @@ export const toggleSoftDeleteDeliveryPartner = async (req, res) => {
       data: {
         isDeleted: !deliveryPartner.isDeleted,
         deletedAt: deliveryPartner.isDeleted ? null : new Date(),
-        isActive: deliveryPartner.isDeleted ? true : false, // Optional: re-activate if undeleting
+        // removed isActive mutation
       },
     });
 
+    const status = toggledDeliveryPartner.isDeleted ? "DEACTIVE" : "ACTIVE";
+
     res.status(200).json({
-      message: `Vendor has been ${toggledDeliveryPartner.isDeleted ? "soft-deleted" : "restored"} successfully.`,
-      data: toggledDeliveryPartner,
+      message: `Delivery partner has been ${toggledDeliveryPartner.isDeleted ? "soft-deleted" : "restored"} successfully.`,
+      data: {
+        ...toggledDeliveryPartner,
+        status, // derived status (isDeleted false => ACTIVE, true => DEACTIVE)
+      },
     });
   } catch (error) {
     console.error("Toggle delete error:", error);

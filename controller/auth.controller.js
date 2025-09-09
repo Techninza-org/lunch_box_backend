@@ -428,6 +428,11 @@ export const userForgotPassword = async (req, res) => {
       });
     }
 
+    // Block if user is soft deleted
+    if (user.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const otpExpiry = new Date();
@@ -495,6 +500,12 @@ export const userVerifyOtpAndResetPassword = async (req, res) => {
       });
     }
 
+    // Block if user is soft deleted
+    if (user.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+
+
     // Check if OTP matches
     if (user.otp !== otp) {
       return res.status(400).json({
@@ -511,6 +522,7 @@ export const userVerifyOtpAndResetPassword = async (req, res) => {
         message: "OTP has expired",
       });
     }
+
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -777,6 +789,11 @@ export const vendorVerifyOtpAndResetPassword = async (req, res) => {
       });
     }
 
+    // Block if vendor is soft deleted
+    if (vendor.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+
     // Check if OTP matches
     if (vendor.otp !== otp) {
       return res.status(400).json({
@@ -1009,6 +1026,11 @@ export const deliveryForgotPassword = async (req, res) => {
       });
     }
 
+    if (deliveryPartner.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+    
+
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const otpExpiry = new Date();
@@ -1077,6 +1099,11 @@ export const deliveryVerifyOtpAndResetPassword = async (req, res) => {
         message: "deliveryPartner not found",
       });
     }
+    // Block if deliveryPartner is soft deleted
+    if (deliveryPartner.isDeleted === true) {
+      return res.status(403).json({ message: "Account is not active" });
+    }
+
 
     // Check if OTP matches
     if (deliveryPartner.otp !== otp) {

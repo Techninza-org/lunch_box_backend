@@ -335,13 +335,13 @@ model AdminWalletTransaction {
 
 model Settings {
   id                        Int   @id @default(autoincrement())
-  gst                       Float
-  vendorCommission          Float
-  deliveryPartnerCommission Float
-  adminCommission           Float
-  deliveryChargePerKm       Float
-  platformCharge            Float
-  otherCharge               Float
+  gst                       Float?
+  vendorCommission          Float?
+  deliveryPartnerCommission Float?
+  adminCommission           Float?
+  deliveryChargePerKm       Float?
+  platformCharge            Float?
+  otherCharge               Float?
 }
 
 enum WalletTransactionType {

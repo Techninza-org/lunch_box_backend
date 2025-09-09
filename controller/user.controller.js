@@ -177,6 +177,7 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
 export const getRestaurantsById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id; // Get user ID from auth middleware
     console.log(id);
     if (!id) {
       return res.status(400).json({
@@ -249,6 +250,20 @@ export const getRestaurantsById = async (req, res) => {
       },
     });
 
+    // If user is logged in, get their cart items to check which meals are added
+    let cartMealIds = new Set();
+    if (userId) {
+      const cartItems = await prisma.cartItem.findMany({
+        where: {
+          userId: userId,
+        },
+        select: {
+          mealId: true,
+        },
+      });
+      cartMealIds = new Set(cartItems.map(item => item.mealId));
+    }
+
     // Group meals by type
     const menuCategories = {
       Breakfast: [],
@@ -285,6 +300,8 @@ export const getRestaurantsById = async (req, res) => {
           ingredients: meal.ingredients,
           createdAt: meal.createdAt,
           updatedAt: meal.updatedAt,
+          // Add cart status
+          addedInCart: cartMealIds.has(meal.id),
         });
       }
     });
@@ -1367,6 +1384,8 @@ export const debugMealData = async (req, res) => {
     });
   }
 };
+
+
 
 
 

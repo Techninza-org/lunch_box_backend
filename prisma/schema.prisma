@@ -341,6 +341,7 @@ model Settings {
   adminCommission           Float
   deliveryChargePerKm       Float
   platformCharge            Float
+  otherCharge               Float
 }
 
 enum WalletTransactionType {

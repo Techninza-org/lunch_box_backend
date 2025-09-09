@@ -1193,54 +1193,125 @@ export const hardDeleteDeliveryPartner = async (req, res) => {
 
 //------------------SETTINGS----------------//
 
-// POST /settings - Create or Update Settings
+// Post /settings - Create or Update Settings
 export const upsertSettings = async (req, res) => {
-  const {
-    gst,
-    vendorCommission,
-    deliveryPartnerCommission,
-    adminCommission,
-    deliveryChargePerKm,
-    platformCharge,
-  } = req.body;
+  const raw = {
+    gst: req.body.gst,
+    vendorCommission: req.body.vendorCommission,
+    deliveryPartnerCommission: req.body.deliveryPartnerCommission,
+    adminCommission: req.body.adminCommission,
+    deliveryChargePerKm: req.body.deliveryChargePerKm,
+    platformCharge: req.body.platformCharge,
+    otherCharge: req.body.otherCharge,
+  };
+
+  const numericFields = [
+    "gst",
+    "vendorCommission",
+    "deliveryPartnerCommission",
+    "adminCommission",
+    "deliveryChargePerKm",
+    "platformCharge",
+    "otherCharge",
+  ];
+
+  const errors = [];
+  const data = {};
+
+  // Validate & coerce numeric fields (allow undefined -> do not overwrite)
+  for (const f of numericFields) {
+    const v = raw[f];
+    if (v === undefined || v === null || v === "") continue;
+    const num = Number(v);
+    if (Number.isNaN(num)) {
+      errors.push(`${f} must be a valid number`);
+      continue;
+    }
+    if (num < 0) {
+      errors.push(`${f} must be >= 0`);
+      continue;
+    }
+    data[f] = num;
+  }
+
+  if (errors.length) {
+    return res.status(400).json({
+      success: false,
+      message: "Validation failed",
+      errors,
+    });
+  }
 
   try {
-    // Check if settings already exist
+    // Fetch existing (expecting a single row table)
     const existing = await prisma.settings.findFirst();
 
-    if (existing) {
-      // Update existing settings
-      const updated = await prisma.settings.update({
-        where: { id: existing.id },
-        data: {
-          gst,
-          vendorCommission,
-          deliveryPartnerCommission,
-          adminCommission,
-          deliveryChargePerKm,
-          platformCharge,
-        },
+    // If no fields provided at all on create attempt
+    if (!existing && Object.keys(data).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one settings field is required",
       });
-      return res.json({ message: "Settings updated", data: updated });
-    } else {
-      // Create new settings
-      const created = await prisma.settings.create({
-        data: {
-          gst,
-          vendorCommission,
-          deliveryPartnerCommission,
-          adminCommission,
-          deliveryChargePerKm,
-          platformCharge,
-        },
-      });
-      return res.status(201).json({ message: "Settings created", data: created });
     }
+
+    let result;
+    let created = false;
+
+    if (existing) {
+      if (Object.keys(data).length === 0) {
+        return res.status(200).json({
+          success: true,
+            message: "No changes supplied",
+          data: existing,
+        });
+      }
+      result = await prisma.settings.update({
+        where: { id: existing.id },
+        data,
+      });
+    } else {
+      result = await prisma.settings.create({ data });
+      created = true;
+    }
+
+    return res.status(created ? 201 : 200).json({
+      success: true,
+      message: created ? "Settings created" : "Settings updated",
+      data: result,
+    });
   } catch (error) {
-    console.error("Error creating/updating settings:", error);
+    // Prisma known request error handling
+    if (error && error.code) {
+      return res.status(400).json({
+        success: false,
+        message: "Database constraint error",
+        code: error.code,
+        meta: error.meta || null,
+      });
+    }
+
+    console.error("upsertSettings error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const getSettings = async (req, res) => {
+  try {
+    const settings = await prisma.settings.findFirst();
+    if (!settings) {
+      return res.status(404).json({ message: "Settings not found" });
+    }
+    return res.json(settings);
+  }
+  catch (error) {
+    console.error("Error fetching settings:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const getAllNotifications = async (req, res) => {
   const { role, userId } = req.query;

@@ -39,6 +39,7 @@ import {
   getAllAdmin,
   softdeleteAdmin,
   getAllScheduledOrders,
+  getSettings,
 
 
 } from "../controller/admin.controller.js";
@@ -118,6 +119,7 @@ router.delete("/hard-delete-delivery-partner/:id", hardDeleteDeliveryPartner);
 
 //----------Settings---------//
 router.post("/update-settings", upsertSettings);
+router.get("/get-settings", getSettings);
 router.get("/get-all-notifications", getAllNotifications);
 router.post("/send-notification", sendCustomNotification);
 

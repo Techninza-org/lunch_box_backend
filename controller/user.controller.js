@@ -15,6 +15,8 @@ export const addUserCurrentLocation = async (req, res) => {
 
     const { latitude, longitude } = req.body;
 
+    console.log("latitude", latitude, "longitude", longitude)
+
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({
         success: false,
@@ -43,7 +45,10 @@ export const addUserCurrentLocation = async (req, res) => {
       },
     });
 
+    console.log("Updated User:", updatedUser)
+
     res.status(200).json({
+      data: updatedUser,
       success: true,
       message: "User location updated successfully",
     });
@@ -59,8 +64,8 @@ export const addUserCurrentLocation = async (req, res) => {
 // Get home page
 export const getHomePage = async (req, res) => {
   try {
-  // Fetch necessary data for the home page (user audience banners only)
-  const banners = await prisma.banner.findMany({ where: { audience: "USER", isActive: true } });
+    // Fetch necessary data for the home page (user audience banners only)
+    const banners = await prisma.banner.findMany({ where: { audience: "USER", isActive: true } });
 
     const vendors = await prisma.vendor.findMany({
       where: { status: "APPROVED", isDeleted: false, isActive: true },

@@ -34,6 +34,7 @@ import {
   getVendorStats,
   getVendorPerformanceStats,
   createVendorRequestWithdrawal,
+  getVendorBanners,
 } from "../controller/vendor.controller.js";
 
 import {
@@ -110,6 +111,8 @@ router.post("/verify-vendor-wallet", verifyVendorWalletPayment);
 router.get("/get-vendor-wallet", getVendorWallet);
 router.post("/debit-vendor-wallet", createVendorDebitTransaction);
 router.post("/withdraw-request", createVendorRequestWithdrawal);
+// Banners for vendor dashboard
+router.get("/banners", getVendorBanners);
 
 //vendor stats
 router.get("/get-vendor-stats", getVendorStats);

@@ -535,6 +535,7 @@ model Banner {
 enum BannerAudience {
   USER
   DELIVERY_PARTNER
+  VENDOR
 }
 
 // CART MODELS

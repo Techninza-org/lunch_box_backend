@@ -89,7 +89,7 @@ export const addbanner = async (req, res) => {
     let bannerAudience = "USER";
     if (audienceRaw) {
       const a = String(audienceRaw).toUpperCase();
-      if (["USER", "DELIVERY", "DELIVERY_PARTNER"].includes(a)) {
+      if (["USER", "DELIVERY", "DELIVERY_PARTNER", "VENDOR"].includes(a)) {
         bannerAudience = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
       }
     }
@@ -125,7 +125,7 @@ export const getBanners = async (req, res) => {
     if (audienceParam) {
       const a = String(audienceParam).toUpperCase();
       const normalized = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
-      if (["USER", "DELIVERY_PARTNER"].includes(normalized)) {
+  if (["USER", "DELIVERY_PARTNER", "VENDOR"].includes(normalized)) {
         where = { audience: normalized };
       }
     }
@@ -175,7 +175,7 @@ export const updateBanner = async (req, res) => {
     if (audienceRaw) {
       const a = String(audienceRaw).toUpperCase();
       const normalized = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
-      if (["USER", "DELIVERY_PARTNER"].includes(normalized)) {
+      if (["USER", "DELIVERY_PARTNER", "VENDOR"].includes(normalized)) {
         data.audience = normalized;
       }
     }

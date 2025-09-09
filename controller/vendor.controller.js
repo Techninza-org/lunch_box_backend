@@ -2,6 +2,18 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 import { saveNotification } from "../utils/saveNotification.js";
+// ...existing code...
+
+// Get vendor banners (audience: VENDOR)
+export const getVendorBanners = async (req, res) => {
+  try {
+    const banners = await prisma.banner.findMany({ where: { audience: "VENDOR", isActive: true } });
+    return res.status(200).json({ success: true, data: banners });
+  } catch (error) {
+    console.error("Error fetching vendor banners:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 export const updateVendorProfile = async (req, res) => {
   const id = req.user?.id;

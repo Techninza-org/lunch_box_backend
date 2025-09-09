@@ -297,10 +297,22 @@ export const getCart = async (req, res) => {
 
     // Calculate cart summary
     const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalAmount = cartItems.reduce(
+    let totalAmount = cartItems.reduce(
       (sum, item) => sum + item.totalPrice,
       0
     );
+
+    // calculate delivery fee
+    const setting = await prisma.settings.findFirst();
+    // per km delivery fee
+    const deliveryFee = setting.deliveryChargePerKm;
+
+    // calculate distance between user and restaurant
+    const distance = 5;
+    const deliveryCost = distance * deliveryFee || 0;
+    totalAmount += deliveryCost;
+
+
 
     // Group items by vendor
     const itemsByVendor = cartItems.reduce((acc, item) => {
@@ -324,6 +336,7 @@ export const getCart = async (req, res) => {
         summary: {
           totalItems,
           totalAmount,
+          deliveryCost,
           vendorCount: Object.keys(itemsByVendor).length,
         },
         itemsByVendor: Object.values(itemsByVendor),
@@ -578,9 +591,8 @@ function validateOptionGroups(optionGroups, selectedOptions) {
     if (group.isRequired && count === 0) {
       return {
         isValid: false,
-        message: `${group.title} is required. Please select at least ${
-          group.minSelect || 1
-        } option(s).`,
+        message: `${group.title} is required. Please select at least ${group.minSelect || 1
+          } option(s).`,
       };
     }
 

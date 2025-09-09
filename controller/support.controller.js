@@ -53,19 +53,10 @@ export const getSupportTickets = async (req, res) => {
   try {
     const userId = req.user?.id;
     const role = req.user?.role;
-    // console.log(`Fetching support tickets for userId: ${userId}, role: ${role}`);
-
-    // if (!userId || role !== "VENDOR") {
-    //   return res.status(403).json({ error: "Access denied. Only vendors can access this endpoint." });
-    // }
-
     const tickets = await prisma.supportTicket.findMany({
       where: {
         userId,
         role,
-        // status: {
-        //   not: "CLOSED",
-        // },
       },
       include: {
         messages: {

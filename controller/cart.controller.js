@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import axios from "axios";
 const prisma = new PrismaClient();
 
 /**
@@ -285,6 +286,8 @@ export const getCart = async (req, res) => {
                 name: true,
                 businessName: true,
                 logo: true,
+                latitude: true,
+                longitude: true,
               },
             },
             mealImages: true,
@@ -301,19 +304,48 @@ export const getCart = async (req, res) => {
       (sum, item) => sum + item.totalPrice,
       0
     );
-
-    // calculate delivery fee
-    const setting = await prisma.settings.findFirst();
-    // per km delivery fee
-    const deliveryFee = setting.deliveryChargePerKm;
-
-    // calculate distance between user and restaurant
     const totalitemcost = totalAmount;
-    const distance = 5;
-    const deliveryCost = distance * deliveryFee || 0;
+
+    // Get user location
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    // Calculate delivery fee based on distance
+    let deliveryCost = 0;
+    let distance = 0;
+
+    if (cartItems.length > 0 && user && user.latitude && user.longitude) {
+      // Get vendor from first cart item (all items should be from same vendor)
+      const vendor = cartItems[0].meal.vendor;
+
+      if (vendor.latitude && vendor.longitude) {
+        // Calculate distance between user and vendor
+        const distanceData = await getDrivingDistance(
+          user.latitude,
+          user.longitude,
+          vendor.latitude,
+          vendor.longitude
+        );
+
+        if (distanceData) {
+          distance = distanceData.distanceKm;
+
+          // Get delivery charge per km from settings
+          const setting = await prisma.settings.findFirst();
+          const deliveryFeePerKm = setting?.deliveryChargePerKm || 0;
+
+          // Calculate delivery cost
+          deliveryCost = distance * deliveryFeePerKm;
+        }
+      }
+    }
+
     totalAmount += deliveryCost;
-
-
 
     // Group items by vendor
     const itemsByVendor = cartItems.reduce((acc, item) => {
@@ -339,6 +371,7 @@ export const getCart = async (req, res) => {
           totalItems,
           totalAmount,
           deliveryCost,
+          distanceKm: distance,
           vendorCount: Object.keys(itemsByVendor).length,
         },
         itemsByVendor: Object.values(itemsByVendor),
@@ -537,6 +570,16 @@ export const getCartSummary = async (req, res) => {
       select: {
         quantity: true,
         totalPrice: true,
+        meal: {
+          select: {
+            vendor: {
+              select: {
+                latitude: true,
+                longitude: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -546,12 +589,55 @@ export const getCartSummary = async (req, res) => {
       0
     );
 
+    // Get user location
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    // Calculate delivery fee based on distance
+    let deliveryCost = 0;
+    let distance = 0;
+
+    if (cartItems.length > 0 && user && user.latitude && user.longitude) {
+      // Get vendor from first cart item (all items should be from same vendor)
+      const vendor = cartItems[0].meal.vendor;
+
+      if (vendor.latitude && vendor.longitude) {
+        // Calculate distance between user and vendor
+        const distanceData = await getDrivingDistance(
+          user.latitude,
+          user.longitude,
+          vendor.latitude,
+          vendor.longitude
+        );
+
+        if (distanceData) {
+          distance = distanceData.distanceKm;
+
+          // Get delivery charge per km from settings
+          const setting = await prisma.settings.findFirst();
+          const deliveryFeePerKm = setting?.deliveryChargePerKm || 0;
+
+          // Calculate delivery cost
+          deliveryCost = distance * deliveryFeePerKm;
+        }
+      }
+    }
+
+    const totalWithDelivery = totalAmount + deliveryCost;
+
     res.status(200).json({
       success: true,
       data: {
         totalItems,
-        totalAmount,
+        totalAmount: totalWithDelivery,
         itemCount: cartItems.length,
+        deliveryCost,
+        distanceKm: distance,
       },
     });
   } catch (error) {
@@ -617,3 +703,40 @@ function validateOptionGroups(optionGroups, selectedOptions) {
 
   return { isValid: true };
 }
+
+// Helper function to calculate driving distance using Google Maps API
+async function getDrivingDistance(userLat, userLng, restLat, restLng) {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn("GOOGLE_MAPS_API_KEY not found in environment variables");
+      return null;
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${userLat},${userLng}&destinations=${restLat},${restLng}&mode=driving&key=${apiKey}`;
+
+    const res = await axios.get(url);
+    const data = res.data;
+
+    if (data.rows[0].elements[0].status === "OK") {
+      const distanceText = data.rows[0].elements[0].distance.text; // "12.3 km"
+      const distanceValue = data.rows[0].elements[0].distance.value; // in meters
+      const duration = data.rows[0].elements[0].duration.text; // "25 mins"
+
+      return {
+        distanceKm: distanceValue / 1000,
+        distanceText,
+        duration,
+      };
+    } else {
+      throw new Error("No route found");
+    }
+  } catch (err) {
+    console.error("Error fetching distance:", err.message);
+    return null;
+  }
+}
+
+
+
+

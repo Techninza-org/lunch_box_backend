@@ -720,8 +720,10 @@ async function getDrivingDistance(userLat, userLng, restLat, restLng) {
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${userLat},${userLng}&destinations=${restLat},${restLng}&mode=driving&key=${apiKey}`;
 
     const res = await axios.get(url);
-    console.log("Distance matrix response:", data);
+
     const data = res.data;
+
+    console.log("Distance data:", data);
 
     if (data.rows[0].elements[0].status === "OK") {
       const distanceText = data.rows[0].elements[0].distance.text; // "12.3 km"

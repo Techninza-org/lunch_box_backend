@@ -624,7 +624,7 @@ export const getCartSummary = async (req, res) => {
           const deliveryFeePerKm = setting?.deliveryChargePerKm || 0;
 
           // Calculate delivery cost
-          deliveryCost = distance * deliveryFeePerKm;
+          deliveryCost = Math.round(distance * deliveryFeePerKm);
         }
       }
     }

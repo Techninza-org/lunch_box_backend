@@ -52,13 +52,13 @@ export const createOrder = async (req, res) => {
     //   });
     // }
 
-    if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
-      console.warn("❌ Invalid payment amount:", finalpaymentAmount);
-      return res.status(400).json({
-        success: false,
-        message: "Valid payment amount is required",
-      });
-    }
+    // if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
+    //   console.warn("❌ Invalid payment amount:", finalpaymentAmount);
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Valid payment amount is required",
+    //   });
+    // }
 
     // Get user's cart items
     console.log("🔍 Fetching cart items for user:", userId);

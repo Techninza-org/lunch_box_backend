@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import axios from "axios";
 
 const prisma = new PrismaClient();
 
@@ -21,8 +22,8 @@ export const createOrder = async (req, res) => {
       subscriptionStartDate,
       orderNotes,
       walletTransactionId,
-      finalpaymentAmount,
-      finaldeliveryCharges,
+      finalPaymentAmount,  // Fixed field name
+      finalDeliveryCharges,  // Fixed field name
     } = req.body;
 
     console.log("👉 Request body:", req.body);
@@ -43,22 +44,6 @@ export const createOrder = async (req, res) => {
         message: "Delivery address is required",
       });
     }
-
-    // if (!finaldeliveryCharges) {
-    //   console.warn("❌ Invalid delivery charges:", finaldeliveryCharges);
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Valid delivery charges is required",
-    //   });
-    // }
-
-    // if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
-    //   console.warn("❌ Invalid payment amount:", finalpaymentAmount);
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Valid payment amount is required",
-    //   });
-    // }
 
     // Get user's cart items
     console.log("🔍 Fetching cart items for user:", userId);
@@ -116,17 +101,28 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // get settings for delivery charges
-    console.log("🔍 Fetching settings for delivery charges");
-    const setting = await prisma.settings.findFirst();
-    const perKmDeliveryCharge = setting?.deliveryChargePerKm || 0;
-    console.log("👉 perKmDeliveryCharge:", perKmDeliveryCharge);
+    // Get user location for distance calculation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        latitude: true,
+        longitude: true,
+      },
+    });
+
+    // Calculate delivery charges based on distance if not provided
+    let deliveryCharges = 0;
+
+    // If finalDeliveryCharges is provided in request, use it
+
+    deliveryCharges = parseFloat(finalDeliveryCharges);
 
     // Calculate pricing
     const subtotal =
-      finalpaymentAmount ||
-      cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-    const deliveryCharges = finaldeliveryCharges;
+      (finalPaymentAmount !== undefined && finalPaymentAmount !== null)
+        ? parseFloat(finalPaymentAmount)
+        : cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
     const taxes = 0;
     const discount = 0; // Can be implemented later
     const totalAmount = subtotal + deliveryCharges + taxes - discount;
@@ -138,6 +134,23 @@ export const createOrder = async (req, res) => {
       discount,
       totalAmount,
     });
+
+    // Validate pricing calculations
+    if (isNaN(totalAmount)) {
+      console.warn("❌ Invalid total amount calculation");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid pricing calculation",
+      });
+    }
+
+    if (isNaN(deliveryCharges)) {
+      console.warn("❌ Invalid delivery charges");
+      return res.status(400).json({
+        success: false,
+        message: "Invalid delivery charges",
+      });
+    }
 
     // Calculate subscription details
     let subscriptionEndDate = null;
@@ -199,7 +212,7 @@ export const createOrder = async (req, res) => {
           subscriptionEndDate: subscriptionEndDate,
           totalMealsInSubscription: totalMealsInSubscription,
           orderNotes: orderNotes || "",
-          walletTransactionId: walletTransactionId || null,
+          walletTransactionId: walletTransactionId ? parseInt(walletTransactionId) : null,
         },
       });
       console.log("✅ Order created:", newOrder.id);
@@ -1136,3 +1149,36 @@ export const getVendorScheduleStats = async (req, res) => {
     });
   }
 };
+
+// Helper function to calculate driving distance using Google Maps API
+async function getDrivingDistance(userLat, userLng, restLat, restLng) {
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn("GOOGLE_MAPS_API_KEY not found in environment variables");
+      return null;
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${userLat},${userLng}&destinations=${restLat},${restLng}&mode=driving&key=${apiKey}`;
+
+    const res = await axios.get(url);
+    const data = res.data;
+
+    if (data.rows[0].elements[0].status === "OK") {
+      const distanceText = data.rows[0].elements[0].distance.text; // "12.3 km"
+      const distanceValue = data.rows[0].elements[0].distance.value; // in meters
+      const duration = data.rows[0].elements[0].duration.text; // "25 mins"
+
+      return {
+        distanceKm: distanceValue / 1000,
+        distanceText,
+        duration,
+      };
+    } else {
+      throw new Error("No route found");
+    }
+  } catch (err) {
+    console.error("Error fetching distance:", err.message);
+    return null;
+  }
+}

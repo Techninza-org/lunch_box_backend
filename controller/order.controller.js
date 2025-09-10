@@ -23,6 +23,8 @@ export const createOrder = async (req, res) => {
       finaldeliveryCharges,
     } = req.body;
 
+    console.log(req.body);
+
     // Validate required fields
     if (!paymentType) {
       return res.status(400).json({
@@ -163,7 +165,7 @@ export const createOrder = async (req, res) => {
           subscriptionStartDate: startDate,
           subscriptionEndDate: subscriptionEndDate,
           totalMealsInSubscription: totalMealsInSubscription,
-          orderNotes: orderNotes,
+          orderNotes: orderNotes || "",
           walletTransactionId: walletTransactionId || null,
         },
       });

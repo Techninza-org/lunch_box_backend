@@ -770,14 +770,17 @@ export const deleteAddress = async (req, res) => {
     const { addressId } = req.params;
     const userId = req.user?.id;
 
+    // Validate user ID
     if (!userId) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
-        message: "User ID is required",
+        message: "Authentication required. User ID is missing.",
       });
     }
 
-    if (!addressId || isNaN(parseInt(addressId))) {
+    // Validate address ID
+    const addressIdNum = parseInt(addressId);
+    if (!addressId || isNaN(addressIdNum)) {
       return res.status(400).json({
         success: false,
         message: "Valid address ID is required",
@@ -787,7 +790,7 @@ export const deleteAddress = async (req, res) => {
     // Check if the address exists and belongs to the user
     const address = await prisma.userAddress.findFirst({
       where: {
-        id: parseInt(addressId),
+        id: addressIdNum,
         userId: userId,
       },
     });
@@ -814,7 +817,7 @@ export const deleteAddress = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       // Delete the address
       await tx.userAddress.delete({
-        where: { id: parseInt(addressId) },
+        where: { id: addressIdNum },
       });
 
       // If the deleted address was default, set another address as default
@@ -832,7 +835,7 @@ export const deleteAddress = async (req, res) => {
         }
       }
 
-      return { deletedAddressId: parseInt(addressId) };
+      return { deletedAddressId: addressIdNum };
     });
 
     return res.status(200).json({
@@ -844,8 +847,8 @@ export const deleteAddress = async (req, res) => {
     console.error("Delete Address Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Something went wrong",
-      error: error.message,
+      message: "Something went wrong while deleting the address",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };

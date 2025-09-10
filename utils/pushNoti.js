@@ -94,28 +94,13 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
         if (tokens.length === 0) {
             return { success: false, message: `No valid FCM tokens found for ${type}` };
         }
-        let response;
-        if (typeof firebaseApp.messaging().sendMulticast === "function") {
-            // Modern SDK
-            response = await firebaseApp.messaging().sendMulticast({
-                tokens,
-                notification: { title, body: message },
-                data
-            });
-        } else {
-            // Legacy SDK fallback
-            response = await firebaseApp.messaging().sendToDevice(tokens, {
-                notification: { title, body: message },
-                data
-            });
-            // Normalize legacy response to look like sendMulticast
-            response = {
-                successCount: response.success || 0,
-                failureCount: response.failure || 0,
-                responses: response.results || []
-            };
-        }
 
+        // Use only the modern sendMulticast method
+        const response = await firebaseApp.messaging().sendMulticast({
+            tokens,
+            notification: { title, body: message },
+            data
+        });
 
         console.log(`✅ Sent ${type} notification → Success: ${response.successCount}, Failed: ${response.failureCount}`);
 

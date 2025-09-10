@@ -11,6 +11,8 @@ const prisma = new PrismaClient();
 export const createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log("👉 User ID:", userId);
+
     const {
       orderType = "ONETIME", // ONETIME, WEEKLY, MONTHLY
       paymentType,
@@ -23,10 +25,11 @@ export const createOrder = async (req, res) => {
       finaldeliveryCharges,
     } = req.body;
 
-    console.log(req.body);
+    console.log("👉 Request body:", req.body);
 
     // Validate required fields
     if (!paymentType) {
+      console.warn("❌ Missing paymentType");
       return res.status(400).json({
         success: false,
         message: "Payment type is required",
@@ -34,6 +37,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!deliveryAddressId) {
+      console.warn("❌ Missing deliveryAddressId");
       return res.status(400).json({
         success: false,
         message: "Delivery address is required",
@@ -41,6 +45,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!finaldeliveryCharges || isNaN(parseInt(finaldeliveryCharges))) {
+      console.warn("❌ Invalid delivery charges:", finaldeliveryCharges);
       return res.status(400).json({
         success: false,
         message: "Valid delivery charges is required",
@@ -48,6 +53,7 @@ export const createOrder = async (req, res) => {
     }
 
     if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
+      console.warn("❌ Invalid payment amount:", finalpaymentAmount);
       return res.status(400).json({
         success: false,
         message: "Valid payment amount is required",
@@ -55,6 +61,7 @@ export const createOrder = async (req, res) => {
     }
 
     // Get user's cart items
+    console.log("🔍 Fetching cart items for user:", userId);
     const cartItems = await prisma.cartItem.findMany({
       where: { userId: userId },
       include: {
@@ -66,8 +73,10 @@ export const createOrder = async (req, res) => {
         selectedOptions: true,
       },
     });
+    console.log("👉 Cart items found:", cartItems.length);
 
     if (cartItems.length === 0) {
+      console.warn("❌ Cart is empty for user:", userId);
       return res.status(400).json({
         success: false,
         message: "Cart is empty",
@@ -79,7 +88,10 @@ export const createOrder = async (req, res) => {
     const allSameVendor = cartItems.every(
       (item) => item.meal.vendorId === vendorId
     );
+    console.log("👉 Vendor ID:", vendorId, "All same vendor?", allSameVendor);
+
     if (!allSameVendor) {
+      console.warn("❌ Items from multiple vendors in cart");
       return res.status(400).json({
         success: false,
         message: "All items must be from the same vendor",
@@ -87,14 +99,17 @@ export const createOrder = async (req, res) => {
     }
 
     // Get delivery address
+    console.log("🔍 Fetching delivery address:", deliveryAddressId);
     const deliveryAddress = await prisma.userAddress.findUnique({
       where: {
         id: Number(deliveryAddressId),
         userId: userId,
       },
     });
+    console.log("👉 Delivery address:", deliveryAddress);
 
     if (!deliveryAddress) {
+      console.warn("❌ Delivery address not found:", deliveryAddressId);
       return res.status(404).json({
         success: false,
         message: "Delivery address not found",
@@ -102,17 +117,27 @@ export const createOrder = async (req, res) => {
     }
 
     // get settings for delivery charges
+    console.log("🔍 Fetching settings for delivery charges");
     const setting = await prisma.settings.findFirst();
     const perKmDeliveryCharge = setting?.deliveryChargePerKm || 0;
-
-
+    console.log("👉 perKmDeliveryCharge:", perKmDeliveryCharge);
 
     // Calculate pricing
-    const subtotal = finalpaymentAmount || cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const subtotal =
+      finalpaymentAmount ||
+      cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
     const deliveryCharges = finaldeliveryCharges;
     const taxes = 0;
     const discount = 0; // Can be implemented later
     const totalAmount = subtotal + deliveryCharges + taxes - discount;
+
+    console.log("💰 Pricing:", {
+      subtotal,
+      deliveryCharges,
+      taxes,
+      discount,
+      totalAmount,
+    });
 
     // Calculate subscription details
     let subscriptionEndDate = null;
@@ -120,6 +145,8 @@ export const createOrder = async (req, res) => {
     const startDate = subscriptionStartDate
       ? new Date(subscriptionStartDate)
       : new Date();
+
+    console.log("👉 Order type:", orderType, "Start date:", startDate);
 
     if (orderType === "WEEKLY") {
       subscriptionEndDate = new Date(startDate);
@@ -138,7 +165,13 @@ export const createOrder = async (req, res) => {
       );
     }
 
+    console.log("📅 Subscription:", {
+      subscriptionEndDate,
+      totalMealsInSubscription,
+    });
+
     // Create order with transaction
+    console.log("📝 Starting transaction to create order...");
     const order = await prisma.$transaction(async (tx) => {
       // Create the order
       const newOrder = await tx.order.create({
@@ -169,9 +202,11 @@ export const createOrder = async (req, res) => {
           walletTransactionId: walletTransactionId || null,
         },
       });
+      console.log("✅ Order created:", newOrder.id);
 
       // Create order items from cart items
       for (const cartItem of cartItems) {
+        console.log("🛒 Creating order item for meal:", cartItem.mealId);
         const orderItem = await tx.orderItem.create({
           data: {
             orderId: newOrder.id,
@@ -190,11 +225,12 @@ export const createOrder = async (req, res) => {
 
         // Create order item options
         for (const selectedOption of cartItem.selectedOptions) {
+          console.log("   ➕ Adding option:", selectedOption.optionId);
           await tx.orderItemOption.create({
             data: {
               orderItemId: orderItem.id,
               optionId: selectedOption.optionId,
-              optionName: `Option ${selectedOption.optionId}`, // You might want to fetch actual option name
+              optionName: `Option ${selectedOption.optionId}`, // temp placeholder
               quantity: selectedOption.quantity,
               unitPrice: selectedOption.price,
               totalPrice: selectedOption.price * selectedOption.quantity,
@@ -203,6 +239,7 @@ export const createOrder = async (req, res) => {
         }
 
         // Create meal schedules based on order type
+        console.log("📅 Creating meal schedule for order item:", orderItem.id);
         await createMealSchedules(
           tx,
           newOrder,
@@ -213,6 +250,7 @@ export const createOrder = async (req, res) => {
       }
 
       // Clear cart after successful order creation
+      console.log("🧹 Clearing cart for user:", userId);
       await tx.cartItem.deleteMany({
         where: { userId: userId },
       });
@@ -221,6 +259,7 @@ export const createOrder = async (req, res) => {
     });
 
     // Fetch complete order details
+    console.log("🔍 Fetching complete order details:", order.id);
     const completeOrder = await prisma.order.findUnique({
       where: { id: order.id },
       include: {
@@ -244,13 +283,15 @@ export const createOrder = async (req, res) => {
       },
     });
 
+    console.log("✅ Order process completed successfully:", completeOrder.id);
+
     res.status(201).json({
       success: true,
       message: "Order created successfully",
       data: completeOrder,
     });
   } catch (error) {
-    console.error("Error creating order:", error);
+    console.error("💥 Error creating order:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -258,6 +299,7 @@ export const createOrder = async (req, res) => {
     });
   }
 };
+
 
 /**
  * Helper function to create meal schedules

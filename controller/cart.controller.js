@@ -707,7 +707,11 @@ function validateOptionGroups(optionGroups, selectedOptions) {
 // Helper function to calculate driving distance using Google Maps API
 async function getDrivingDistance(userLat, userLng, restLat, restLng) {
   try {
+    console.log("Fetching driving distance...", userLat, userLng, restLat, restLng);
+
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    console.log(apiKey);
+
     if (!apiKey) {
       console.warn("GOOGLE_MAPS_API_KEY not found in environment variables");
       return null;
@@ -716,6 +720,7 @@ async function getDrivingDistance(userLat, userLng, restLat, restLng) {
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${userLat},${userLng}&destinations=${restLat},${restLng}&mode=driving&key=${apiKey}`;
 
     const res = await axios.get(url);
+    console.log("Distance matrix response:", data);
     const data = res.data;
 
     if (data.rows[0].elements[0].status === "OK") {

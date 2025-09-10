@@ -358,7 +358,7 @@ export const userRegister = async (req, res) => {
 
 // user login
 export const userLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
@@ -386,6 +386,13 @@ export const userLogin = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    if (fcmToken) {
+      await prisma.user.update({
+        where: { email },
+        data: { fcmToken: fcmToken || null },
+      });
+    }
+
 
     // Exclude password from response
     const { password: _, ...userData } = user;
@@ -395,7 +402,7 @@ export const userLogin = async (req, res) => {
       { id: user.id, role: "USER" },
       process.env.JWT_SECRET,
       {
-        expiresIn: "7d",
+        expiresIn: "14d",
       }
     );
 
@@ -653,7 +660,7 @@ export const vendorRegister = async (req, res) => {
 
 // vendor login
 export const vendorLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   console.log(email, password);
 
@@ -679,6 +686,15 @@ export const vendorLogin = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, vendor.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+
+    // Update FCM token if provided
+    if (fcmToken) {
+      await prisma.vendor.update({
+        where: { id: vendor.id },
+        data: { fcmToken },
+      });
     }
 
     // Exclude password from response
@@ -1029,7 +1045,7 @@ export const deliveryForgotPassword = async (req, res) => {
     if (deliveryPartner.isDeleted === true) {
       return res.status(403).json({ message: "Account is not active" });
     }
-    
+
 
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();

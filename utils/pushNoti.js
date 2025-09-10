@@ -10,46 +10,52 @@ let vendorApp = null;
 let userApp = null;
 let deliveryApp = null;
 
+// Helper to safely load a JSON service account file
+const loadServiceAccount = (filePath) => {
+    if (fs.existsSync(filePath)) {
+        try {
+            const content = fs.readFileSync(filePath, "utf8");
+            return JSON.parse(content);
+        } catch (err) {
+            console.error(`🔥 Failed to parse service account file ${filePath}:`, err.message);
+        }
+    } else {
+        console.warn(`⚠️  Service account file not found at ${filePath}`);
+    }
+    return null;
+};
+
 // Initialize Firebase apps only if service account files exist
 try {
-    const vendorServiceAccountPath = path.join(process.cwd(), "rootmitvendor-firebase-adminsdk-fbsvc-c293314932.json");
-    const userServiceAccountPath = path.join(process.cwd(), "rootmituser-firebase-adminsdk-fbsvc-2b9c6ac052.json");
-    const deliveryServiceAccountPath = path.join(process.cwd(), "rootmitdelivery-firebase-adminsdk-fbsvc-c293314932.json");
+    const vendorServiceAccountPath = path.resolve("./rootmitvendor-firebase-adminsdk-fbsvc-c293314932.json");
+    const userServiceAccountPath = path.resolve("./rootmituser-firebase-adminsdk-fbsvc-2b9c6ac052.json");
+    const deliveryServiceAccountPath = path.resolve("./rootmitdelivery-firebase-adminsdk-fbsvc-c293314932.json");
 
-    // Initialize vendor app if service account file exists
-    if (fs.existsSync(vendorServiceAccountPath)) {
-        const serviceAccountVendor = require(vendorServiceAccountPath);
+    const vendorCreds = loadServiceAccount(vendorServiceAccountPath);
+    if (vendorCreds) {
         vendorApp = admin.initializeApp(
-            { credential: admin.credential.cert(serviceAccountVendor) },
+            { credential: admin.credential.cert(vendorCreds) },
             "vendorApp"
         );
         console.log("✅ Firebase Vendor app initialized");
-    } else {
-        console.warn("⚠️  Firebase Vendor service account file not found");
     }
 
-    // Initialize user app if service account file exists
-    if (fs.existsSync(userServiceAccountPath)) {
-        const serviceAccountUser = require(userServiceAccountPath);
+    const userCreds = loadServiceAccount(userServiceAccountPath);
+    if (userCreds) {
         userApp = admin.initializeApp(
-            { credential: admin.credential.cert(serviceAccountUser) },
+            { credential: admin.credential.cert(userCreds) },
             "userApp"
         );
         console.log("✅ Firebase User app initialized");
-    } else {
-        console.warn("⚠️  Firebase User service account file not found");
     }
 
-    // Initialize delivery app if service account file exists
-    if (fs.existsSync(deliveryServiceAccountPath)) {
-        const serviceAccountDelivery = require(deliveryServiceAccountPath);
+    const deliveryCreds = loadServiceAccount(deliveryServiceAccountPath);
+    if (deliveryCreds) {
         deliveryApp = admin.initializeApp(
-            { credential: admin.credential.cert(serviceAccountDelivery) },
+            { credential: admin.credential.cert(deliveryCreds) },
             "deliveryApp"
         );
         console.log("✅ Firebase Delivery app initialized");
-    } else {
-        console.warn("⚠️  Firebase Delivery service account file not found");
     }
 } catch (error) {
     console.error("🔥 Error initializing Firebase apps:", error.message);
@@ -57,18 +63,9 @@ try {
 
 /**
  * Generic function to send notifications
- * @param {Object} params
- * @param {number|number[]} params.ids - Single ID or array of IDs
- * @param {string} params.title - Notification title
- * @param {string} params.message - Notification body
- * @param {string} params.type - "user" | "vendor" | "delivery"
- * @param {Object} params.firebaseApp - Firebase app instance
- * @param {string} params.table - Prisma model name ("user", "vendor", "deliveryPartner")
- * @param {Object} [params.data] - Additional data payload for the notification
  */
 const sendNotification = async ({ ids, title, message, type, firebaseApp, table, data = {} }) => {
     try {
-        // Check if Firebase app is initialized
         if (!firebaseApp) {
             return {
                 success: false,
@@ -78,7 +75,6 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
 
         const normalizedIds = Array.isArray(ids) ? ids : [ids];
 
-        // Fetch tokens dynamically from respective table
         const records = await prisma[table].findMany({
             where: {
                 id: { in: normalizedIds },
@@ -97,25 +93,19 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             return { success: false, message: `No valid FCM tokens found for ${type}` };
         }
 
-        // Send multicast notification
         const response = await firebaseApp.messaging().sendMulticast({
             tokens,
-            notification: {
-                title,
-                body: message
-            },
-            data: data
+            notification: { title, body: message },
+            data
         });
 
         console.log(`✅ Sent ${type} notification → Success: ${response.successCount}, Failed: ${response.failureCount}`);
 
-        // Handle failed tokens
         const failedTokens = [];
         if (response.failureCount > 0) {
             response.responses.forEach((resp, idx) => {
                 if (!resp.success) {
                     console.error(`❌ Failed ${type} token ${tokens[idx]}:`, resp.error);
-                    // Check if the error is due to invalid token
                     if (resp.error.code === 'messaging/invalid-registration-token' ||
                         resp.error.code === 'messaging/registration-token-not-registered') {
                         failedTokens.push(tokens[idx]);
@@ -123,7 +113,6 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
                 }
             });
 
-            // Remove invalid tokens from database
             if (failedTokens.length > 0) {
                 await removeInvalidTokens(table, failedTokens);
                 console.log(`🧹 Cleaned up ${failedTokens.length} invalid FCM tokens from ${table}`);
@@ -142,14 +131,8 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
     }
 };
 
-/**
- * Remove invalid FCM tokens from database
- * @param {string} table - Prisma model name
- * @param {string[]} tokens - Array of invalid tokens to remove
- */
 const removeInvalidTokens = async (table, tokens) => {
     try {
-        // For each invalid token, set fcmToken to null in the database
         for (const token of tokens) {
             await prisma[table].updateMany({
                 where: { fcmToken: token },
@@ -161,19 +144,10 @@ const removeInvalidTokens = async (table, tokens) => {
     }
 };
 
-/**
- * Send notification to multiple user types
- * @param {Object} params
- * @param {Object} params.targets - Object with user types as keys and IDs as values
- * @param {string} params.title - Notification title
- * @param {string} params.message - Notification body
- * @param {Object} [params.data] - Additional data payload
- */
 export const sendMultiTypeNotification = async ({ targets, title, message, data = {} }) => {
     try {
         const results = [];
 
-        // Send to users
         if (targets.users && userApp) {
             const result = await sendNotification({
                 ids: targets.users,
@@ -187,7 +161,6 @@ export const sendMultiTypeNotification = async ({ targets, title, message, data 
             results.push({ type: "user", result });
         }
 
-        // Send to vendors
         if (targets.vendors && vendorApp) {
             const result = await sendNotification({
                 ids: targets.vendors,
@@ -201,7 +174,6 @@ export const sendMultiTypeNotification = async ({ targets, title, message, data 
             results.push({ type: "vendor", result });
         }
 
-        // Send to delivery partners
         if (targets.deliveryPartners && deliveryApp) {
             const result = await sendNotification({
                 ids: targets.deliveryPartners,
@@ -215,18 +187,13 @@ export const sendMultiTypeNotification = async ({ targets, title, message, data 
             results.push({ type: "delivery", result });
         }
 
-        return {
-            success: true,
-            message: "Notifications sent to all targets",
-            results
-        };
+        return { success: true, message: "Notifications sent to all targets", results };
     } catch (error) {
         console.error("🔥 Error sending multi-type notification:", error);
         return { success: false, message: "Failed to send multi-type notification", error: error.message };
     }
 };
 
-// Specific wrappers for each type
 export const sendVendorNotification = (ids, title, message, data = {}) =>
     sendNotification({ ids, title, message, type: "vendor", firebaseApp: vendorApp, table: "vendor", data });
 
@@ -236,7 +203,6 @@ export const sendUserNotification = (ids, title, message, data = {}) =>
 export const sendDeliveryNotification = (ids, title, message, data = {}) =>
     sendNotification({ ids, title, message, type: "delivery", firebaseApp: deliveryApp, table: "deliveryPartner", data });
 
-// Export app status for debugging
 export const getFirebaseAppStatus = () => ({
     vendorApp: !!vendorApp,
     userApp: !!userApp,

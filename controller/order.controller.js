@@ -44,7 +44,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!finaldeliveryCharges || isNaN(parseInt(finaldeliveryCharges))) {
+    if (!finaldeliveryCharges) {
       console.warn("❌ Invalid delivery charges:", finaldeliveryCharges);
       return res.status(400).json({
         success: false,

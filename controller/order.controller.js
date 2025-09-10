@@ -44,13 +44,13 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!finaldeliveryCharges) {
-      console.warn("❌ Invalid delivery charges:", finaldeliveryCharges);
-      return res.status(400).json({
-        success: false,
-        message: "Valid delivery charges is required",
-      });
-    }
+    // if (!finaldeliveryCharges) {
+    //   console.warn("❌ Invalid delivery charges:", finaldeliveryCharges);
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Valid delivery charges is required",
+    //   });
+    // }
 
     if (!finalpaymentAmount || isNaN(parseInt(finalpaymentAmount))) {
       console.warn("❌ Invalid payment amount:", finalpaymentAmount);

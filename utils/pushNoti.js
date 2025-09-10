@@ -73,7 +73,8 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             };
         }
 
-        const normalizedIds = Array.isArray(ids) ? ids : [ids];
+        // Fetch tokens dynamically from respective table
+        const normalizedIds = (Array.isArray(ids) ? ids : [ids]).map(id => Number(id));
 
         const records = await prisma[table].findMany({
             where: {
@@ -82,6 +83,7 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             },
             select: { id: true, fcmToken: true },
         });
+
 
         if (records.length === 0) {
             return { success: false, message: `No ${type}s found with valid FCM tokens` };

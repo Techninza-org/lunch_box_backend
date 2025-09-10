@@ -12,9 +12,9 @@ let deliveryApp = null;
 
 // Initialize Firebase apps only if service account files exist
 try {
-    const vendorServiceAccountPath = path.join(process.cwd(), "rootmit-vendor-firebase-adminsdk-fbsvc-c293314932.json");
-    const userServiceAccountPath = path.join(process.cwd(), "rootmit-user-firebase-adminsdk-fbsvc-c293314932.json");
-    const deliveryServiceAccountPath = path.join(process.cwd(), "rootmit-delivery-firebase-adminsdk-fbsvc-c293314932.json");
+    const vendorServiceAccountPath = path.join(process.cwd(), "rootmitvendor-firebase-adminsdk-fbsvc-c293314932.json");
+    const userServiceAccountPath = path.join(process.cwd(), "rootmituser-firebase-adminsdk-fbsvc-2b9c6ac052.json");
+    const deliveryServiceAccountPath = path.join(process.cwd(), "rootmitdelivery-firebase-adminsdk-fbsvc-c293314932.json");
 
     // Initialize vendor app if service account file exists
     if (fs.existsSync(vendorServiceAccountPath)) {
@@ -104,7 +104,7 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
                 title,
                 body: message
             },
-            data: data // Additional data payload
+            data: data
         });
 
         console.log(`✅ Sent ${type} notification → Success: ${response.successCount}, Failed: ${response.failureCount}`);

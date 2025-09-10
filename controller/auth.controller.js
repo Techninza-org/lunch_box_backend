@@ -4,6 +4,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import sendMail from "../utils/sendOtp.js";
 
+import {
+  sendVendorNotification,
+  sendUserNotification,
+  sendDeliveryNotification,
+  sendMultiTypeNotification,
+  getFirebaseAppStatus
+} from "../utils/pushNoti.js";
+
 // Helper to index files by fieldname
 function indexFiles(files) {
   const map = {};
@@ -1161,6 +1169,46 @@ export const deliveryVerifyOtpAndResetPassword = async (req, res) => {
       success: false,
       message: "Internal server error",
       error: error.message,
+    });
+  }
+};
+
+
+
+// test push notification user
+
+export const testPushNotificationUser = async (req, res) => {
+  try {
+    const { userids, title, message, data } = req.body;
+
+    // Validate input
+    if (!userids || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "User, title, and message are required"
+      });
+    }
+
+    // Send notification
+    const result = await sendUserNotification(userids, title, message, data || {});
+
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: "Notifications sent successfully",
+        data: result
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error("Error in notifyVendorsOnOrder:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
     });
   }
 };

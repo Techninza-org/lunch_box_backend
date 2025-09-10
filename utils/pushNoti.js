@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import { getMessaging } from "firebase-admin/messaging";
 import { PrismaClient } from "@prisma/client";
 import fs from "fs";
 import path from "path";
@@ -73,7 +74,7 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             };
         }
 
-        // Fetch tokens dynamically from respective table
+        // Normalize IDs -> Prisma expects Int
         const normalizedIds = (Array.isArray(ids) ? ids : [ids]).map(id => Number(id));
 
         const records = await prisma[table].findMany({
@@ -83,7 +84,6 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             },
             select: { id: true, fcmToken: true },
         });
-
 
         if (records.length === 0) {
             return { success: false, message: `No ${type}s found with valid FCM tokens` };
@@ -95,8 +95,8 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             return { success: false, message: `No valid FCM tokens found for ${type}` };
         }
 
-        // Use only the modern sendMulticast method
-        const response = await firebaseApp.messaging().sendMulticast({
+        // Use new v11+ API
+        const response = await getMessaging(firebaseApp).sendEachForMulticast({
             tokens,
             notification: { title, body: message },
             data
@@ -109,7 +109,7 @@ const sendNotification = async ({ ids, title, message, type, firebaseApp, table,
             response.responses.forEach((resp, idx) => {
                 if (!resp.success) {
                     console.error(`❌ Failed ${type} token ${tokens[idx]}:`, resp.error);
-                    if (resp.error.code === 'messaging/invalid-registration-token' ||
+                    if (resp.error.code === 'messaging/invalid-argument' ||
                         resp.error.code === 'messaging/registration-token-not-registered') {
                         failedTokens.push(tokens[idx]);
                     }

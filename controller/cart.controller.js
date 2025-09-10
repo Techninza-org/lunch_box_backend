@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import haversine from "haversine-distance";
 const prisma = new PrismaClient();
 
 /**
@@ -705,44 +706,87 @@ function validateOptionGroups(optionGroups, selectedOptions) {
 }
 
 // Helper function to calculate driving distance using Google Maps API
-async function getDrivingDistance(userLat, userLng, restLat, restLng) {
-  try {
-    console.log("Fetching driving distance...", userLat, userLng, restLat, restLng);
 
+
+export async function getDrivingDistance(userLat, userLng, restLat, restLng) {
+  try {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    console.log(apiKey);
 
     if (!apiKey) {
-      console.warn("GOOGLE_MAPS_API_KEY not found in environment variables");
-      return null;
+      console.warn("GOOGLE_MAPS_API_KEY not found. Using haversine fallback.");
+      return haversineFallback(userLat, userLng, restLat, restLng);
     }
 
-    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${userLat},${userLng}&destinations=${restLat},${restLng}&mode=driving&key=${apiKey}`;
+    const url = `https://routes.googleapis.com/directions/v2:computeRoutes`;
 
-    const res = await axios.get(url);
+    const body = {
+      origin: {
+        location: {
+          latLng: { latitude: userLat, longitude: userLng },
+        },
+      },
+      destination: {
+        location: {
+          latLng: { latitude: restLat, longitude: restLng },
+        },
+      },
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_AWARE",
+    };
 
-    const data = res.data;
+    const res = await axios.post(url, body, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.legs",
+      },
+    });
 
-    console.log("Distance data:", data);
+    const route = res.data.routes?.[0];
 
-    if (data.rows[0].elements[0].status === "OK") {
-      const distanceText = data.rows[0].elements[0].distance.text; // "12.3 km"
-      const distanceValue = data.rows[0].elements[0].distance.value; // in meters
-      const duration = data.rows[0].elements[0].duration.text; // "25 mins"
+    if (route) {
+      const distanceMeters = route.distanceMeters;
+      const duration = route.duration; // ISO8601, e.g. "123s"
 
       return {
-        distanceKm: distanceValue / 1000,
-        distanceText,
-        duration,
+        distanceKm: distanceMeters / 1000,
+        distanceText: `${(distanceMeters / 1000).toFixed(2)} km`,
+        duration: formatDuration(duration),
       };
     } else {
-      throw new Error("No route found");
+      console.warn("Routes API returned no route. Using haversine fallback.");
+      return haversineFallback(userLat, userLng, restLat, restLng);
     }
   } catch (err) {
     console.error("Error fetching distance:", err.message);
-    return null;
+    return haversineFallback(userLat, userLng, restLat, restLng);
   }
 }
+
+function haversineFallback(userLat, userLng, restLat, restLng) {
+  const distMeters = haversine(
+    { lat: userLat, lon: userLng },
+    { lat: restLat, lon: restLng }
+  );
+  const distKm = distMeters / 1000;
+
+  return {
+    distanceKm: distKm,
+    distanceText: `${distKm.toFixed(2)} km (straight line)`,
+    duration: "N/A",
+  };
+}
+
+function formatDuration(duration) {
+  if (!duration) return "N/A";
+  // duration = "1234s"
+  const seconds = parseInt(duration.replace("s", ""), 10);
+  const mins = Math.floor(seconds / 60);
+  const hrs = Math.floor(mins / 60);
+  if (hrs > 0) return `${hrs}h ${mins % 60}m`;
+  return `${mins} min`;
+}
+
 
 
 

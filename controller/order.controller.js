@@ -24,6 +24,7 @@ export const createOrder = async (req, res) => {
       walletTransactionId,
       finalPaymentAmount,  // Fixed field name
       finalDeliveryCharges,  // Fixed field name
+      deliveryCharge
     } = req.body;
 
     console.log("👉 Request body:", req.body);
@@ -320,17 +321,36 @@ export const createOrder = async (req, res) => {
 async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
   const schedules = [];
 
+  // Fetch vendor with time slots
+  const vendor = await tx.vendor.findUnique({
+    where: { id: order.vendorId },
+    select: {
+      breakfastStart: true,
+      breakfastEnd: true,
+      lunchStart: true,
+      lunchEnd: true,
+      eveningStart: true,
+      eveningEnd: true,
+      dinnerStart: true,
+      dinnerEnd: true,
+    }
+  });
+
+  if (!vendor) {
+    throw new Error("Vendor not found");
+  }
+
   if (orderType === "ONETIME") {
     // For one-time orders, create schedule for delivery date or tomorrow
     const deliveryDate = new Date(startDate);
-    deliveryDate.setDate(deliveryDate.getDate() + 1); // Next day delivery
+    deliveryDate.setDate(deliveryDate.getDate()); // Next day delivery
 
     schedules.push({
       orderId: order.id,
       orderItemId: orderItem.id,
       vendorId: order.vendorId, // Add vendor ID for delivery operations
       scheduledDate: deliveryDate,
-      scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
+      scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
       mealType: orderItem.mealType,
       mealTitle: orderItem.mealTitle,
       mealImage: orderItem.mealImage,
@@ -348,7 +368,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
           orderItemId: orderItem.id,
           vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
-          scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
+          scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
           mealType: orderItem.mealType,
           mealTitle: orderItem.mealTitle,
           mealImage: orderItem.mealImage,
@@ -368,7 +388,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
           orderItemId: orderItem.id,
           vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
-          scheduledTimeSlot: getTimeSlotForMealType(orderItem.mealType),
+          scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
           mealType: orderItem.mealType,
           mealTitle: orderItem.mealTitle,
           mealImage: orderItem.mealImage,
@@ -385,20 +405,32 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
 }
 
 /**
- * Helper function to get time slot based on meal type
+ * Helper function to get vendor-specific time slot based on meal type
  */
-function getTimeSlotForMealType(mealType) {
+function getVendorTimeSlotForMealType(vendor, mealType) {
   switch (mealType) {
     case "Breakfast":
-      return "08:00-10:00";
+      if (vendor.breakfastStart && vendor.breakfastEnd) {
+        return `${vendor.breakfastStart}-${vendor.breakfastEnd}`;
+      }
+      return "08:00-10:00"; // fallback to default
     case "Lunch":
-      return "12:00-14:00";
+      if (vendor.lunchStart && vendor.lunchEnd) {
+        return `${vendor.lunchStart}-${vendor.lunchEnd}`;
+      }
+      return "12:00-14:00"; // fallback to default
     case "Evening":
-      return "16:00-18:00";
+      if (vendor.eveningStart && vendor.eveningEnd) {
+        return `${vendor.eveningStart}-${vendor.eveningEnd}`;
+      }
+      return "16:00-18:00"; // fallback to default
     case "Dinner":
-      return "19:00-21:00";
+      if (vendor.dinnerStart && vendor.dinnerEnd) {
+        return `${vendor.dinnerStart}-${vendor.dinnerEnd}`;
+      }
+      return "19:00-21:00"; // fallback to default
     default:
-      return "12:00-14:00";
+      return "12:00-14:00"; // fallback to default
   }
 }
 

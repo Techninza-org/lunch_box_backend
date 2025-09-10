@@ -308,6 +308,7 @@ export const getCart = async (req, res) => {
     const deliveryFee = setting.deliveryChargePerKm;
 
     // calculate distance between user and restaurant
+    const totalitemcost = totalAmount;
     const distance = 5;
     const deliveryCost = distance * deliveryFee || 0;
     totalAmount += deliveryCost;
@@ -334,6 +335,7 @@ export const getCart = async (req, res) => {
       data: {
         items: cartItems,
         summary: {
+          totalitemcost,
           totalItems,
           totalAmount,
           deliveryCost,

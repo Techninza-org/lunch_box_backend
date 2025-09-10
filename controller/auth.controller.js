@@ -1212,3 +1212,38 @@ export const testPushNotificationUser = async (req, res) => {
     });
   }
 };
+
+// test push notification vendor
+export const testPushNotificationVendors = async (req, res) => {
+  try {
+    const { vendorids, title, message, data } = req.body;
+
+
+    if (!vendorids || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor, title, and message are required"
+      });
+    }
+    const result = await sendVendorNotification(vendorids, title, message, data || {});
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: "Notifications sent successfully",
+        data: result
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: result.message
+      });
+    }
+
+  } catch (error) {
+    console.error("Error in notifyVendorsOnOrder:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};

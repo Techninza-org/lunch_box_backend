@@ -28,7 +28,7 @@ const loadServiceAccount = (filePath) => {
 
 // Initialize Firebase apps only if service account files exist
 try {
-    const vendorServiceAccountPath = path.resolve("./rootmitvendor-firebase-adminsdk-fbsvc-c293314932.json");
+    const vendorServiceAccountPath = path.resolve("./rootmit-vendor-firebase-adminsdk-fbsvc-cdd5c5ac9a.json");
     const userServiceAccountPath = path.resolve("./rootmituser-firebase-adminsdk-fbsvc-2b9c6ac052.json");
     const deliveryServiceAccountPath = path.resolve("./rootmitdelivery-firebase-adminsdk-fbsvc-c293314932.json");
 

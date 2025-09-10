@@ -21,6 +21,7 @@ import {
   adminForgotPassword,
   adminVerifyOtpAndResetPassword,
   testPushNotificationUser,
+  testPushNotificationVendors,
 } from "../controller/auth.controller.js";
 
 // Use global multer utility for vendor logos
@@ -57,5 +58,6 @@ router.post("/delivery-forgot-password", deliveryForgotPassword);
 router.post("/delivery-otp-verify", deliveryVerifyOtpAndResetPassword);
 
 
-router.post("/test-push-notification-user", testPushNotificationUser)
+router.post("/test-push-notification-user", testPushNotificationUser);
+router.post("/test-push-notification-vendors", testPushNotificationVendors);
 export default router;

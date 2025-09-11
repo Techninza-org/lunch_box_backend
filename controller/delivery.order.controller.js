@@ -281,6 +281,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
 
     // Validate status transitions
     const validTransitions = {
+      PARTNER_ASSIGNED: ["PICKED_UP", "CANCELLED"],
       PREPARED: ["PICKED_UP"],
       PICKED_UP: ["OUT_FOR_DELIVERY"],
       OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],

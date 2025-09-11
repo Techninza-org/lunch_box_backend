@@ -392,6 +392,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         await tx.vendorWalletTransaction.create({
           data: {
             vendorId: schedule.vendor.id,
+            walletId: vendorWallet.id,
             amount: vendorAmount,
             type: "CREDIT",
             description: `Order payment for order #${schedule.order.id}`
@@ -423,6 +424,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         await tx.deliveryWalletTransaction.create({
           data: {
             deliveryId: deliveryPartnerId,
+            walletId: deliveryWallet.id,
             amount: deliveryPartnerCommission,
             type: "CREDIT",
             description: `Delivery commission for order #${schedule.order.id}`
@@ -457,6 +459,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
           await tx.adminWalletTransaction.create({
             data: {
               adminId: adminWallet.adminId,
+              walletId: adminWallet.id,
               amount: adminCommission,
               type: "CREDIT",
               discription: `Admin commission for order #${schedule.order.id}` // Note: 'discription' is correct as per schema

@@ -214,7 +214,7 @@ export const createOrder = async (req, res) => {
           totalMealsInSubscription: totalMealsInSubscription,
           orderNotes: orderNotes || "",
           walletTransactionId: walletTransactionId ? parseInt(walletTransactionId) : null,
-          deliveryChargeperUnit,
+          deliveryChargeperUnit: deliveryChargeperUnit || 0,
 
         },
       });

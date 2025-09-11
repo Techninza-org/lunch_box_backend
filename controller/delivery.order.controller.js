@@ -363,7 +363,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         const vendorCommission = (totalPrice * (setting?.vendorCommission || 0)) / 100;
         const adminCommission = (totalPrice * (setting?.adminCommission || 0)) / 100;
         const deliveryPartnerCommission = parseFloat(schedule.order.deliveryChargeperUnit) || 0;
-
+        console.log("totalPrice :", totalPrice, "vendorCommission :", vendorCommission, "adminCommission :", adminCommission, "deliveryPartnerCommission :", deliveryPartnerCommission);
         // Calculate vendor amount (total - vendor commission)
         const vendorAmount = totalPrice - vendorCommission;
 
@@ -426,7 +426,8 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             deliveryId: deliveryPartnerId,
             walletId: deliveryWallet.id,
             amount: deliveryPartnerCommission,
-            type: "CREDIT"
+            type: "CREDIT",
+            description: `Delivery commission for order #${schedule.order.id}`
           }
         });
 

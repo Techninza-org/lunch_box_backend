@@ -24,7 +24,7 @@ export const createOrder = async (req, res) => {
       walletTransactionId,
       finalPaymentAmount,  // Fixed field name
       finalDeliveryCharges,  // Fixed field name
-      deliveryCharge
+      deliveryChargeperUnit,
     } = req.body;
 
     console.log("👉 Request body:", req.body);
@@ -214,6 +214,8 @@ export const createOrder = async (req, res) => {
           totalMealsInSubscription: totalMealsInSubscription,
           orderNotes: orderNotes || "",
           walletTransactionId: walletTransactionId ? parseInt(walletTransactionId) : null,
+          deliveryChargeperUnit,
+
         },
       });
       console.log("✅ Order created:", newOrder.id);

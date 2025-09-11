@@ -54,12 +54,15 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
             deliveryLat: true,
             deliveryLng: true,
             orderNotes: true,
+            deliveryChargeperUnit: true,
             user: {
               select: {
                 id: true,
                 name: true,
                 phoneNumber: true,
                 profileImage: true,
+                longitude: true,
+                latitude: true,
               },
             },
           },
@@ -115,9 +118,9 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
           completionRate:
             totalSchedules > 0
               ? (
-                  ((statsFormatted.DELIVERED || 0) / totalSchedules) *
-                  100
-                ).toFixed(2)
+                ((statsFormatted.DELIVERED || 0) / totalSchedules) *
+                100
+              ).toFixed(2)
               : 0,
         },
       },
@@ -165,6 +168,7 @@ export const getScheduleByIdDeliveryPartner = async (req, res) => {
             deliveryPhone: true,
             deliveryLat: true,
             deliveryLng: true,
+            deliveryChargeperUnit: true,
             orderNotes: true,
             createdAt: true,
             user: {
@@ -173,6 +177,8 @@ export const getScheduleByIdDeliveryPartner = async (req, res) => {
                 name: true,
                 phoneNumber: true,
                 profileImage: true,
+                longitude: true,
+                latitude: true,
               },
             },
             orderItems: {
@@ -239,12 +245,12 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
   try {
     const deliveryPartnerId = req.user.id;
     const { scheduleId } = req.params;
-    const { 
+    const {
       status,
       notes,
       latitude,
       longitude
-     } = req.body;
+    } = req.body;
 
     // Delivery partners can only update certain statuses
     const allowedStatuses = ["OUT_FOR_DELIVERY", "DELIVERED", "MISSED"];
@@ -535,11 +541,11 @@ export const getDeliveryPartnerDashboardStats = async (req, res) => {
           completionRate:
             totalTodaySchedules > 0
               ? (
-                  ((todayStats.find((s) => s.status === "DELIVERED")?._count
-                    .id || 0) /
-                    totalTodaySchedules) *
-                  100
-                ).toFixed(2)
+                ((todayStats.find((s) => s.status === "DELIVERED")?._count
+                  .id || 0) /
+                  totalTodaySchedules) *
+                100
+              ).toFixed(2)
               : 0,
         },
         weekly: {

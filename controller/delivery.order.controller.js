@@ -319,6 +319,11 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
                 select: { name: true, phoneNumber: true },
               },
               deliveryChargeperUnit: true,
+              orderItems: {
+                select: {
+                  totalPrice: true,
+                },
+              },
             },
           },
           vendor: {
@@ -326,11 +331,6 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
               name: true,
               businessName: true,
               id: true,
-            },
-          },
-          orderItems: {
-            select: {
-              totalPrice: true,
             },
           },
         },
@@ -354,7 +354,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         }
 
         // Calculate total price from all order items
-        const totalPrice = schedule.orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const totalPrice = schedule.order.orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
         // Get settings for commission calculations
         const setting = await tx.settings.findFirst();

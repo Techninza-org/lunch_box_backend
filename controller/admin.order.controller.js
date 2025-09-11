@@ -399,7 +399,7 @@ export const assignDeliveryPartnerAdmin = async (req, res) => {
         },
         data: {
           deliveryPartnerId: Number(deliveryPartnerId),
-          status: "PREPARED",
+          status: "PARTNER_ASSIGNED",
         },
         include: {
           order: {
@@ -482,11 +482,11 @@ export const getAdminDashboardStats = async (req, res) => {
     const dateFilter =
       startDate && endDate
         ? {
-            createdAt: {
-              gte: new Date(startDate),
-              lte: new Date(endDate),
-            },
-          }
+          createdAt: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        }
         : {};
 
     // Order statistics
@@ -531,11 +531,11 @@ export const getAdminDashboardStats = async (req, res) => {
       where:
         startDate && endDate
           ? {
-              scheduledDate: {
-                gte: new Date(startDate),
-                lte: new Date(endDate),
-              },
-            }
+            scheduledDate: {
+              gte: new Date(startDate),
+              lte: new Date(endDate),
+            },
+          }
           : {},
       _count: { id: true },
     });
@@ -556,7 +556,7 @@ export const getAdminDashboardStats = async (req, res) => {
         },
         users: {
           totalUsers,
-            // active users
+          // active users
           totalVendors,
           totalDeliveryPartners,
           todaysRegisteredUsers,

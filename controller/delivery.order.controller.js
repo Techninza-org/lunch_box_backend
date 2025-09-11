@@ -253,7 +253,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
     } = req.body;
 
     // Delivery partners can only update certain statuses
-    const allowedStatuses = ["OUT_FOR_DELIVERY", "DELIVERED", "MISSED"];
+    const allowedStatuses = ["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "MISSED"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -280,8 +280,9 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
 
     // Validate status transitions
     const validTransitions = {
-      PREPARED: ["OUT_FOR_DELIVERY"],
-      OUT_FOR_DELIVERY: ["DELIVERED", "MISSED"],
+      PREPARED: ["PICKED_UP"],
+      PICKED_UP: ["OUT_FOR_DELIVERY"],
+      OUT_FOR_DELIVERY: ["DELIVERED", "CANCELLED"],
     };
 
     if (!validTransitions[schedule.status]?.includes(status)) {

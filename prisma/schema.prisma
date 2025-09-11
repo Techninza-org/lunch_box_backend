@@ -698,7 +698,9 @@ model OrderItemOption {
 
 enum MealScheduleStatus {
   SCHEDULED
+  PARTNER_ASSIGNED
   PREPARED
+  PICKED_UP
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED

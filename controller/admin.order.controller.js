@@ -460,7 +460,7 @@ export const assignDeliveryPartnerAdmin = async (req, res) => {
         await tx.mealSchedule.updateMany({
           where: {
             orderId: Number(orderId),
-            status: { in: ["SCHEDULED", "PREPARED"] },
+            status: { in: ["SCHEDULED", "PREPARED", "PARTNER_ASSIGNED"] },
           },
           data: {
             deliveryPartnerId: Number(deliveryPartnerId),

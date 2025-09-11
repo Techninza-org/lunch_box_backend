@@ -299,14 +299,15 @@ model DeliveryWallet {
 }
 
 model DeliveryWalletTransaction {
-  id         Int                   @id @default(autoincrement())
-  deliveryId Int
-  walletId   Int // Link to UserWallet
-  amount     Float
-  type       WalletTransactionType // CREDIT | DEBIT
-  paymentId  String?               @unique
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
+  id          Int                   @id @default(autoincrement())
+  deliveryId  Int
+  walletId    Int // Link to UserWallet
+  amount      Float
+  description String?
+  type        WalletTransactionType // CREDIT | DEBIT
+  paymentId   String?               @unique
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   deliveryPartner DeliveryPartner @relation(fields: [deliveryId], references: [id])
   deliveryWallet  DeliveryWallet? @relation(fields: [walletId], references: [id])

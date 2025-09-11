@@ -426,8 +426,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             deliveryId: deliveryPartnerId,
             walletId: deliveryWallet.id,
             amount: deliveryPartnerCommission,
-            type: "CREDIT",
-            description: `Delivery commission for order #${schedule.order.id}`
+            type: "CREDIT"
           }
         });
 

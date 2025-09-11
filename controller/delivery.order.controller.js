@@ -392,7 +392,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         await tx.vendorWalletTransaction.create({
           data: {
             vendorId: schedule.vendor.id,
-            walletId: vendorWallet.id,
+            vendorWalletId: vendorWallet.id,
             amount: vendorAmount,
             type: "CREDIT",
             description: `Order payment for order #${schedule.order.id}`

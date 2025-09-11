@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import { sendUserNotification, sendVendorNotification } from "../utils/pushNoti.js";
 
 const prisma = new PrismaClient();
 
@@ -276,7 +277,7 @@ export const createOrder = async (req, res) => {
       return newOrder;
     });
 
-    // Fetch complete order details
+    // Fetch complete order details with user and vendor FCM tokens
     console.log("🔍 Fetching complete order details:", order.id);
     const completeOrder = await prisma.order.findUnique({
       where: { id: order.id },
@@ -288,6 +289,7 @@ export const createOrder = async (req, res) => {
             businessName: true,
             logo: true,
             phoneNumber: true,
+            fcmToken: true, // Include FCM token for push notification
           },
         },
         orderItems: {
@@ -298,8 +300,41 @@ export const createOrder = async (req, res) => {
         mealSchedules: {
           orderBy: { scheduledDate: "asc" },
         },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            fcmToken: true, // Include FCM token for push notification
+          },
+        },
       },
     });
+
+    // Send push notifications to user and vendor
+    try {
+      // Send notification to user
+      if (completeOrder.user && completeOrder.user.fcmToken) {
+        await sendUserNotification(
+          completeOrder.user.id,
+          "Order Placed Successfully",
+          `Your order #${completeOrder.id} has been placed successfully`,
+          { orderId: completeOrder.id.toString(), type: "ORDER_PLACED" }
+        );
+      }
+
+      // Send notification to vendor
+      if (completeOrder.vendor && completeOrder.vendor.fcmToken) {
+        await sendVendorNotification(
+          completeOrder.vendor.id,
+          "New Order Received",
+          `You have received a new order #${completeOrder.id} from ${completeOrder.user.name}`,
+          { orderId: completeOrder.id.toString(), type: "NEW_ORDER" }
+        );
+      }
+    } catch (notificationError) {
+      console.error("Error sending push notifications:", notificationError);
+      // Don't fail the request if notifications fail
+    }
 
     console.log("✅ Order process completed successfully:", completeOrder.id);
 

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { sendUserNotification, sendVendorNotification } from "../utils/pushNoti.js";
 
 const prisma = new PrismaClient();
 
@@ -405,17 +406,43 @@ export const assignDeliveryPartnerAdmin = async (req, res) => {
           order: {
             select: {
               id: true,
-              user: { select: { name: true, phoneNumber: true } },
+              user: { select: { id: true, name: true, phoneNumber: true, fcmToken: true } },
             },
           },
           vendor: {
-            select: { name: true, businessName: true },
+            select: { id: true, name: true, businessName: true, fcmToken: true },
           },
           deliveryPartner: {
             select: { id: true, name: true, phoneNumber: true },
           },
         },
       });
+
+      // Send push notifications to user and vendor
+      try {
+        // Send notification to user
+        if (schedule.order.user && schedule.order.user.fcmToken) {
+          await sendUserNotification(
+            schedule.order.user.id,
+            "Delivery Partner Assigned",
+            `A delivery partner has been assigned to your order #${schedule.order.id}`,
+            { orderId: schedule.order.id.toString(), type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+
+        // Send notification to vendor
+        if (schedule.vendor && schedule.vendor.fcmToken) {
+          await sendVendorNotification(
+            schedule.vendor.id,
+            "Delivery Partner Assigned",
+            `A delivery partner has been assigned to order #${schedule.order.id}`,
+            { orderId: schedule.order.id.toString(), type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error sending push notifications:", notificationError);
+        // Don't fail the request if notifications fail
+      }
 
       res.status(200).json({
         success: true,
@@ -451,8 +478,36 @@ export const assignDeliveryPartnerAdmin = async (req, res) => {
           mealSchedules: {
             where: { deliveryPartnerId: Number(deliveryPartnerId) },
           },
+          user: { select: { id: true, fcmToken: true } },
+          vendor: { select: { id: true, fcmToken: true } },
         },
       });
+
+      // Send push notifications to user and vendor
+      try {
+        // Send notification to user
+        if (updatedOrder.user && updatedOrder.user.fcmToken) {
+          await sendUserNotification(
+            updatedOrder.user.id,
+            "Delivery Partner Assigned",
+            `A delivery partner has been assigned to your order #${updatedOrder.id}`,
+            { orderId: updatedOrder.id.toString(), type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+
+        // Send notification to vendor
+        if (updatedOrder.vendor && updatedOrder.vendor.fcmToken) {
+          await sendVendorNotification(
+            updatedOrder.vendor.id,
+            "Delivery Partner Assigned",
+            `A delivery partner has been assigned to order #${updatedOrder.id}`,
+            { orderId: updatedOrder.id.toString(), type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error sending push notifications:", notificationError);
+        // Don't fail the request if notifications fail
+      }
 
       res.status(200).json({
         success: true,

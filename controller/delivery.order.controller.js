@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { sendUserNotification, sendVendorNotification } from "../utils/pushNoti.js";
 
 const prisma = new PrismaClient();
 
@@ -316,7 +317,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             select: {
               id: true,
               user: {
-                select: { name: true, phoneNumber: true },
+                select: { name: true, phoneNumber: true, id: true },
               },
               deliveryChargeperUnit: true,
               orderItems: {
@@ -466,6 +467,32 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             }
           });
         }
+      }
+
+      // Send push notifications to user and vendor for all status updates
+      try {
+        // Send notification to user
+        if (schedule.order.user?.id) {
+          await sendUserNotification(
+            [schedule.order.user.id],
+            `Order Status Updated`,
+            `Your order #${schedule.order.id} status has been updated to ${status}.`,
+            { orderId: schedule.order.id.toString(), status, type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+
+        // Send notification to vendor
+        if (schedule.vendor?.id) {
+          await sendVendorNotification(
+            [schedule.vendor.id],
+            `Order Status Updated`,
+            `Order #${schedule.order.id} status has been updated to ${status}.`,
+            { orderId: schedule.order.id.toString(), status, type: "ORDER_STATUS_UPDATE" }
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error sending push notifications:", notificationError);
+        // Don't fail the whole operation if notifications fail
       }
 
       return schedule;

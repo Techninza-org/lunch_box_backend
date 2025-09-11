@@ -70,13 +70,13 @@ function indexFiles(files) {
 
 export const addbanner = async (req, res) => {
   try {
-  const { title, description } = req.body;
-  const audienceRaw = (req.body?.audience ?? req.body?.audiance ?? null);
+    const { title, description } = req.body;
+    const audienceRaw = (req.body?.audience ?? req.body?.audiance ?? null);
     const filesByField = indexFiles(req.files);
     const imageFile = (filesByField["image"]?.[0]) || (filesByField["banner"]?.[0]) || (filesByField["file"]?.[0]) || null;
     const image = imageFile ? imageFile.filename : null;
 
-  if (!title || !description || !image) {
+    if (!title || !description || !image) {
       return res.status(400).json({
         success: false,
         message: "Title, description, and image are required",
@@ -125,7 +125,7 @@ export const getBanners = async (req, res) => {
     if (audienceParam) {
       const a = String(audienceParam).toUpperCase();
       const normalized = a === "DELIVERY" ? "DELIVERY_PARTNER" : a;
-  if (["USER", "DELIVERY_PARTNER", "VENDOR"].includes(normalized)) {
+      if (["USER", "DELIVERY_PARTNER", "VENDOR"].includes(normalized)) {
         where = { audience: normalized };
       }
     }
@@ -1072,7 +1072,8 @@ export const verifyDeliveryPartner = async (req, res) => {
 
     const updatedPartner = await prisma.deliveryPartner.update({
       where: { id },
-      data: { isVerified: true,
+      data: {
+        isVerified: true,
         isActive: true, // Optionally activate the partner upon verification
       },
     });
@@ -1266,7 +1267,7 @@ export const upsertSettings = async (req, res) => {
       if (Object.keys(data).length === 0) {
         return res.status(200).json({
           success: true,
-            message: "No changes supplied",
+          message: "No changes supplied",
           data: existing,
         });
       }
@@ -1418,7 +1419,7 @@ export const sendCustomNotification = async (req, res) => {
       const notification = await prisma.notification.create({
         data: {
           title,
-            message,
+          message,
           role: normalizedRole,
           userId: null,
         },
@@ -1505,18 +1506,19 @@ export const getAllScheduledOrders = async (req, res) => {
         status: "PENDING",
         mealSchedules: {
           some: {
-            status: "SCHEDULED"
+            status: { in: ["SCHEDULED", "PARTNER_ASSIGNED"] }
+
           }
         }
       },
       include: {
-        mealSchedules : true
+        mealSchedules: true
       }
     })
-    
+
     // Extract all meal schedules from all orders
     const allMealSchedules = [];
-    
+
     orders.forEach(order => {
       order.mealSchedules.forEach(mealSchedule => {
         allMealSchedules.push({
@@ -1526,10 +1528,10 @@ export const getAllScheduledOrders = async (req, res) => {
         });
       });
     });
-    
+
     // Group all meal schedules by date
     const mealsByDate = {};
-    
+
     allMealSchedules.forEach(mealSchedule => {
       // Handle scheduledDate - it could be a Date object or string
       let dateKey;
@@ -1543,24 +1545,24 @@ export const getAllScheduledOrders = async (req, res) => {
         // Skip if scheduledDate is null/undefined
         return;
       }
-      
+
       if (!mealsByDate[dateKey]) {
         mealsByDate[dateKey] = [];
       }
-      
+
       mealsByDate[dateKey].push(mealSchedule);
     });
-    
+
     // Convert to array format with date and meals
     const groupedMeals = Object.keys(mealsByDate).map(date => ({
       scheduledDate: date,
       meals: mealsByDate[date]
     }));
-    
+
     // Sort by date
     groupedMeals.sort((a, b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
-    
-    return res.status(200).json({ mealSchedules: groupedMeals });t
+
+    return res.status(200).json({ mealSchedules: groupedMeals }); t
   }
   catch (error) {
     console.error("Error fetching scheduled orders:", error);

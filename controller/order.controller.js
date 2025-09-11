@@ -236,6 +236,8 @@ export const createOrder = async (req, res) => {
             quantity: cartItem.quantity,
             unitPrice: cartItem.meal.basePrice,
             totalPrice: cartItem.totalPrice,
+            deliveryChargeperUnit: deliveryChargeperUnit || 0,
+
           },
         });
 

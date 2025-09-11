@@ -26,8 +26,9 @@ model Admin {
   isDeleted              Boolean                  @default(false)
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
-  AdminWallet            AdminWallet?
+  AdminWallet            AdminWallet?             @relation(fields: [adminWalletId], references: [id])
   AdminWalletTransaction AdminWalletTransaction[]
+  adminWalletId          Int?
 }
 
 model DeliveryPartner {
@@ -312,28 +313,28 @@ model DeliveryWalletTransaction {
 }
 
 model AdminWallet {
-  id        Int      @id @default(autoincrement())
-  adminId   Int      @unique
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  admin        Admin                    @relation(fields: [adminId], references: [id])
+  id           Int                      @id @default(autoincrement())
+  balance      Float                    @default(0)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
   transactions AdminWalletTransaction[]
+  Admin        Admin[]
 }
 
 model AdminWalletTransaction {
-  id        Int                   @id @default(autoincrement())
-  adminId   Int
-  walletId  Int // Link to UserWallet
-  amount    Float
-  type      WalletTransactionType // CREDIT | DEBIT
-  paymentId String?               @unique
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id          Int                   @id @default(autoincrement())
+  walletId    Int // Link to UserWallet
+  amount      Float
+  discription String?
+  type        WalletTransactionType // CREDIT | DEBIT
+  paymentId   String?               @unique
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
-  admin       Admin        @relation(fields: [adminId], references: [id])
   adminWallet AdminWallet? @relation(fields: [walletId], references: [id])
+
+  Admin   Admin? @relation(fields: [adminId], references: [id])
+  adminId Int?
 }
 
 model Settings {
@@ -672,6 +673,8 @@ model OrderItem {
   quantity   Int
   unitPrice  Float // price per unit at time of order
   totalPrice Float // unitPrice * quantity + options
+
+  deliveryChargeperUnit String?
 
   createdAt DateTime @default(now())
 

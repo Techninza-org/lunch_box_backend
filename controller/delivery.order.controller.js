@@ -318,10 +318,20 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
               user: {
                 select: { name: true, phoneNumber: true },
               },
+              deliveryChargeperUnit: true,
             },
           },
           vendor: {
-            select: { name: true, businessName: true },
+            select: {
+              name: true,
+              businessName: true,
+              id: true,
+            },
+          },
+          orderItems: {
+            select: {
+              totalPrice: true,
+            },
           },
         },
       });
@@ -340,6 +350,117 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
           await tx.order.update({
             where: { id: schedule.orderId },
             data: { status: "DELIVERED" },
+          });
+        }
+
+        // Calculate total price from all order items
+        const totalPrice = schedule.orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+        // Get settings for commission calculations
+        const setting = await tx.settings.findFirst();
+
+        // Calculate commissions
+        const vendorCommission = (totalPrice * (setting?.vendorCommission || 0)) / 100;
+        const adminCommission = (totalPrice * (setting?.adminCommission || 0)) / 100;
+        const deliveryPartnerCommission = parseFloat(schedule.order.deliveryChargeperUnit) || 0;
+
+        // Calculate vendor amount (total - vendor commission)
+        const vendorAmount = totalPrice - vendorCommission;
+
+        // Add money to vendor wallet
+        // First, get or create vendor wallet
+        let vendorWallet = await tx.vendorWallet.findUnique({
+          where: { vendorId: schedule.vendor.id }
+        });
+
+        if (!vendorWallet) {
+          vendorWallet = await tx.vendorWallet.create({
+            data: {
+              vendorId: schedule.vendor.id,
+              balance: 0
+            }
+          });
+        }
+
+        // Update vendor wallet balance
+        await tx.vendorWallet.update({
+          where: { id: vendorWallet.id },
+          data: { balance: { increment: vendorAmount } }
+        });
+
+        // Create vendor wallet transaction
+        await tx.vendorWalletTransaction.create({
+          data: {
+            vendorId: schedule.vendor.id,
+            amount: vendorAmount,
+            type: "CREDIT",
+            description: `Order payment for order #${schedule.order.id}`
+          }
+        });
+
+        // Add money to delivery partner wallet
+        // First, get or create delivery partner wallet
+        let deliveryWallet = await tx.deliveryWallet.findUnique({
+          where: { deliveryId: deliveryPartnerId }
+        });
+
+        if (!deliveryWallet) {
+          deliveryWallet = await tx.deliveryWallet.create({
+            data: {
+              deliveryId: deliveryPartnerId,
+              balance: 0
+            }
+          });
+        }
+
+        // Update delivery wallet balance
+        await tx.deliveryWallet.update({
+          where: { id: deliveryWallet.id },
+          data: { balance: { increment: deliveryPartnerCommission } }
+        });
+
+        // Create delivery wallet transaction
+        await tx.deliveryWalletTransaction.create({
+          data: {
+            deliveryId: deliveryPartnerId,
+            amount: deliveryPartnerCommission,
+            type: "CREDIT",
+            description: `Delivery commission for order #${schedule.order.id}`
+          }
+        });
+
+        // Add money to admin wallet
+        // First, get or create admin wallet
+        let adminWallet = await tx.adminWallet.findFirst();
+
+        if (!adminWallet) {
+          // Get first admin to associate with the wallet
+          const firstAdmin = await tx.admin.findFirst();
+          if (firstAdmin) {
+            adminWallet = await tx.adminWallet.create({
+              data: {
+                adminId: firstAdmin.id,
+                balance: 0
+              }
+            });
+          }
+        }
+
+        if (adminWallet) {
+          // Update admin wallet balance
+          await tx.adminWallet.update({
+            where: { id: adminWallet.id },
+            data: { balance: { increment: adminCommission } }
+          });
+
+          // Create admin wallet transaction
+          await tx.adminWalletTransaction.create({
+            data: {
+              adminId: adminWallet.adminId,
+              amount: adminCommission,
+              type: "CREDIT",
+              discription: `Admin commission for order #${schedule.order.id}` // Note: 'discription' is correct as per schema
+            }
           });
         }
       }

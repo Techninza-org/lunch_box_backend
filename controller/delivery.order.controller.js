@@ -15,8 +15,6 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
       page = 1,
       limit = 10,
       status,
-      startDate,
-      endDate,
       mealType,
     } = req.query;
 
@@ -24,18 +22,6 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
 
     if (status) whereClause.status = status;
     if (mealType) whereClause.mealType = mealType;
-
-    if (startDate && endDate) {
-      whereClause.scheduledDate = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
-    } else {
-      // Default to today and future schedules
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      whereClause.scheduledDate = { gte: today };
-    }
 
     const schedules = await prisma.mealSchedule.findMany({
       where: whereClause,

@@ -708,7 +708,13 @@ export const getDeliveryWallet = async (req, res) => {
       return res.status(404).json({ error: "Wallet not found" });
     }
 
-    res.json({ wallet });
+    // Get wallet transactions
+    const transactions = await prisma.deliveryWalletTransaction.findMany({
+      where: { deliveryId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ wallet, transactions });
   } catch (err) {
     console.error("Error fetching wallet:", err);
     res.status(500).json({ error: "Internal Server Error" });

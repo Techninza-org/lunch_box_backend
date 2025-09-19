@@ -240,7 +240,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
     } = req.body;
 
     // Delivery partners can only update certain statuses
-    const allowedStatuses = ["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "MISSED"];
+    const allowedStatuses = ["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "MISSED", "CANCELLED"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({

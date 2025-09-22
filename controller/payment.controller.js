@@ -251,20 +251,44 @@ export const getVendorWallet = async (req, res) => {
       },
     });
 
-    // get wallet transactions
+    if (!wallet) {
+      return res.status(404).json({ error: "Wallet not found" });
+    }
+
+    // Get wallet transactions
     const transactions = await prisma.vendorWalletTransaction.findMany({
       where: { vendorWalletId: wallet.id, vendorId },
       orderBy: { createdAt: "desc" },
     });
 
-    if (!wallet) {
-      return res.status(404).json({ error: "Wallet not found" });
-    }
+    // Get withdrawal requests
+    const withdrawalRequests =
+      await prisma.vendorRequestWithdrawalAmount.findMany({
+        where: { vendorId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
 
-    res.json({ wallet, transactions });
+    res.json({
+      success: true,
+      data: {
+        wallet,
+        transactions,
+        withdrawalRequests,
+      },
+    });
   } catch (err) {
     console.error("Error fetching wallet:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+    });
   }
 };
 
@@ -714,10 +738,34 @@ export const getDeliveryWallet = async (req, res) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json({ wallet, transactions });
+    // Get withdrawal requests
+    const withdrawalRequests =
+      await prisma.deliveryRequestWithdrawalAmount.findMany({
+        where: { deliveryId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          amount: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+    res.json({
+      success: true,
+      data: {
+        wallet,
+        transactions,
+        withdrawalRequests,
+      },
+    });
   } catch (err) {
     console.error("Error fetching wallet:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({
+      success: false,
+      error: "Internal Server Error",
+    });
   }
 };
 

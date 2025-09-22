@@ -181,28 +181,30 @@ export const updateDeliveryPartnerProfile = async (req, res) => {
       zipCode,
     } = req.body;
 
-    // get profile image  from request
+    // get profile image from request (optional)
     const profileImage = filesByField["profile-image"]
       ? `uploads/delivery-partners/${filesByField["profile-image"][0].filename}`
       : null;
 
-    // Validate profile image
-    if (!profileImage) {
-      return res.status(400).json({ message: "Profile image is required" });
+    // Prepare update data
+    const updateData = {
+      name,
+      phoneNumber,
+      phoneNumber2,
+      address,
+      city,
+      state,
+      zipCode,
+    };
+
+    // Only include profileImage if it's provided
+    if (profileImage) {
+      updateData.profileImage = profileImage;
     }
 
     const updatedPartner = await prisma.deliveryPartner.update({
       where: { id: deliveryPartnerId },
-      data: {
-        name,
-        phoneNumber,
-        phoneNumber2,
-        profileImage,
-        address,
-        city,
-        state,
-        zipCode,
-      },
+      data: updateData,
     });
 
     return res.status(200).json({

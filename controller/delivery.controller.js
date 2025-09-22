@@ -561,3 +561,53 @@ export const saveCurrentLocationDeliveryPartner = async (req, res) => {
     data: updatedDeliveryPartner,
   });
 };
+
+// online offline toggle
+export const toggleOnlineOfflineDeliveryPartner = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+
+    if (!deliveryPartnerId) {
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Delivery partner ID missing" });
+    }
+
+    // First get the current delivery partner to check current status
+    const currentDeliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { id: deliveryPartnerId },
+      select: { id: true, isActive: true },
+    });
+
+    if (!currentDeliveryPartner) {
+      return res.status(404).json({ error: "Delivery partner not found" });
+    }
+
+    // Toggle the current status (if true, make false; if false, make true)
+    const newStatus = !currentDeliveryPartner.isActive;
+
+    const updatedDeliveryPartner = await prisma.deliveryPartner.update({
+      where: { id: deliveryPartnerId },
+      data: { isActive: newStatus },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Status updated to ${
+        newStatus ? "online" : "offline"
+      } successfully`,
+      data: {
+        id: updatedDeliveryPartner.id,
+        isActive: updatedDeliveryPartner.isActive,
+        previousStatus: currentDeliveryPartner.isActive,
+        newStatus: newStatus,
+      },
+    });
+  } catch (error) {
+    console.error("Error toggling delivery partner online status:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};

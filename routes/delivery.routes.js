@@ -15,6 +15,7 @@ import {
   getDeliveryPartnerOrders,
   getDeliveryPartnerProfile,
   saveCurrentLocationDeliveryPartner,
+  toggleOnlineOfflineDeliveryPartner,
 } from "../controller/delivery.controller.js";
 import {
   createSupportTicket,
@@ -79,5 +80,8 @@ router.post("/create-delivery-wallet-order", createDeliveryWalletOrder);
 router.post("/verify-delivery-wallet", verifyDeliveryWalletPayment);
 router.get("/get-delivery-wallet", getDeliveryWallet);
 router.post("/debit-delivery-wallet", createDeliveryDebitTransaction);
+
+// online offline toggle
+router.put("/toggle-online-offline", toggleOnlineOfflineDeliveryPartner);
 
 export default router;

@@ -13,20 +13,19 @@ import {
   updateDeliveryPartnerProfile,
   addOrUpdateDeliveryBankDetail,
   getDeliveryPartnerOrders,
-  getDeliveryPartnerProfile
+  getDeliveryPartnerProfile,
   saveCurrentLocationDeliveryPartner,
 } from "../controller/delivery.controller.js";
 import {
   createSupportTicket,
   getSupportTickets,
-  sendMessageToSupportTicket
+  sendMessageToSupportTicket,
 } from "../controller/support.controller.js";
 import {
   createDeliveryWalletOrder,
   verifyDeliveryWalletPayment,
   getDeliveryWallet,
-  createDeliveryDebitTransaction
-
+  createDeliveryDebitTransaction,
 } from "../controller/payment.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
@@ -60,20 +59,25 @@ router.get("/banners", getDeliveryBanners);
 router.get("/get-delivery-notifications", getDeliveryNotifications);
 router.get("/get-order-history", getMealsByDeliveryPartner);
 router.get("/orders", getDeliveryPartnerOrders);
-router.put("/update-delivery-profile", deliveryPartner.any(), updateDeliveryPartnerProfile);
+router.put(
+  "/update-delivery-profile",
+  deliveryPartner.any(),
+  updateDeliveryPartnerProfile
+);
 router.post("/update-delivery-bank-details", addOrUpdateDeliveryBankDetail);
 
 // Support ticket routes
 router.post("/create-delivery-support-ticket", createSupportTicket);
 router.get("/get-delivery-support-tickets", getSupportTickets);
-router.post("/send-message-to-support-ticket-delivery/:ticketId", sendMessageToSupportTicket);
+router.post(
+  "/send-message-to-support-ticket-delivery/:ticketId",
+  sendMessageToSupportTicket
+);
 
 // Wallet routes
 router.post("/create-delivery-wallet-order", createDeliveryWalletOrder);
 router.post("/verify-delivery-wallet", verifyDeliveryWalletPayment);
 router.get("/get-delivery-wallet", getDeliveryWallet);
 router.post("/debit-delivery-wallet", createDeliveryDebitTransaction);
-
-
 
 export default router;

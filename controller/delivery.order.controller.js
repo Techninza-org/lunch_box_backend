@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { sendUserNotification, sendVendorNotification } from "../utils/pushNoti.js";
+import {
+  sendUserNotification,
+  sendVendorNotification,
+} from "../utils/pushNoti.js";
 
 const prisma = new PrismaClient();
 
@@ -11,16 +14,25 @@ const prisma = new PrismaClient();
 export const getDeliveryPartnerSchedules = async (req, res) => {
   try {
     const deliveryPartnerId = req.user.id; // Assuming delivery partner auth middleware sets req.user
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      mealType,
-    } = req.query;
+    const { page = 1, limit = 10, status, mealType } = req.query;
 
-    const whereClause = { deliveryPartnerId: deliveryPartnerId };
+    // Define active order statuses
+    const activeStatuses = [
+      "PARTNER_ASSIGNED",
+      "PREPARED",
+      "PICKED_UP",
+      "OUT_FOR_DELIVERY",
+    ];
 
-    if (status) whereClause.status = status;
+    const whereClause = {
+      deliveryPartnerId: deliveryPartnerId,
+      status: { in: activeStatuses },
+    };
+
+    // If specific status is requested, validate it's an active status
+    if (status && activeStatuses.includes(status)) {
+      whereClause.status = status;
+    }
     if (mealType) whereClause.mealType = mealType;
 
     const schedules = await prisma.mealSchedule.findMany({
@@ -52,6 +64,20 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
                 latitude: true,
               },
             },
+            orderItems: {
+              select: {
+                id: true,
+                mealTitle: true,
+                mealImage: true,
+                mealType: true,
+                isVeg: true,
+                quantity: true,
+                unitPrice: true,
+                totalPrice: true,
+                selectedOptions: true,
+                deliveryChargeperUnit: true,
+              },
+            },
           },
         },
         vendor: {
@@ -76,17 +102,28 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
       where: whereClause,
     });
 
-    // Calculate delivery statistics
-    const scheduleStats = await prisma.mealSchedule.groupBy({
+    // Calculate delivery statistics for all orders (not just active ones)
+    const allOrdersWhereClause = { deliveryPartnerId: deliveryPartnerId };
+    if (mealType) allOrdersWhereClause.mealType = mealType;
+
+    const allScheduleStats = await prisma.mealSchedule.groupBy({
       by: ["status"],
-      where: whereClause,
+      where: allOrdersWhereClause,
       _count: { id: true },
     });
 
-    const statsFormatted = scheduleStats.reduce((acc, stat) => {
+    const statsFormatted = allScheduleStats.reduce((acc, stat) => {
       acc[stat.status] = stat._count.id;
       return acc;
     }, {});
+
+    // Calculate specific counts for completed and active orders
+    const completedOrdersCount = statsFormatted.DELIVERED || 0;
+    const activeOrdersCount =
+      (statsFormatted.PARTNER_ASSIGNED || 0) +
+      (statsFormatted.PREPARED || 0) +
+      (statsFormatted.PICKED_UP || 0) +
+      (statsFormatted.OUT_FOR_DELIVERY || 0);
 
     res.status(200).json({
       success: true,
@@ -95,19 +132,22 @@ export const getDeliveryPartnerSchedules = async (req, res) => {
         pagination: {
           currentPage: Number(page),
           totalPages: Math.ceil(totalSchedules / Number(limit)),
-          totalSchedules,
+          totalActiveSchedules: totalSchedules, // Only active orders are paginated
           hasNextPage: Number(page) * Number(limit) < totalSchedules,
           hasPrevPage: Number(page) > 1,
         },
         statistics: {
-          totalSchedules,
+          activeOrdersCount,
+          completedOrdersCount,
+          totalSchedules: activeOrdersCount + completedOrdersCount,
           statusBreakdown: statsFormatted,
           completionRate:
-            totalSchedules > 0
+            activeOrdersCount + completedOrdersCount > 0
               ? (
-                ((statsFormatted.DELIVERED || 0) / totalSchedules) *
-                100
-              ).toFixed(2)
+                  (completedOrdersCount /
+                    (activeOrdersCount + completedOrdersCount)) *
+                  100
+                ).toFixed(2)
               : 0,
         },
       },
@@ -232,15 +272,16 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
   try {
     const deliveryPartnerId = req.user.id;
     const { scheduleId } = req.params;
-    const {
-      status,
-      notes,
-      latitude,
-      longitude
-    } = req.body;
+    const { status, notes, latitude, longitude } = req.body;
 
     // Delivery partners can only update certain statuses
-    const allowedStatuses = ["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "MISSED", "CANCELLED"];
+    const allowedStatuses = [
+      "PICKED_UP",
+      "OUT_FOR_DELIVERY",
+      "DELIVERED",
+      "MISSED",
+      "CANCELLED",
+    ];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -342,38 +383,53 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
         }
 
         // Calculate total price from all order items
-        const totalPrice = schedule.order.orderItems.reduce((sum, item) => sum + item.totalPrice, 0);
+        const totalPrice = schedule.order.orderItems.reduce(
+          (sum, item) => sum + item.totalPrice,
+          0
+        );
 
         // Get settings for commission calculations
         const setting = await tx.settings.findFirst();
 
         // Calculate commissions
-        const vendorCommission = (totalPrice * (setting?.vendorCommission || 0)) / 100;
-        const adminCommission = (totalPrice * (setting?.adminCommission || 0)) / 100;
-        const deliveryPartnerCommission = parseFloat(schedule.order.deliveryChargeperUnit) || 0;
-        console.log("totalPrice :", totalPrice, "vendorCommission :", vendorCommission, "adminCommission :", adminCommission, "deliveryPartnerCommission :", deliveryPartnerCommission);
+        const vendorCommission =
+          (totalPrice * (setting?.vendorCommission || 0)) / 100;
+        const adminCommission =
+          (totalPrice * (setting?.adminCommission || 0)) / 100;
+        const deliveryPartnerCommission =
+          parseFloat(schedule.order.deliveryChargeperUnit) || 0;
+        console.log(
+          "totalPrice :",
+          totalPrice,
+          "vendorCommission :",
+          vendorCommission,
+          "adminCommission :",
+          adminCommission,
+          "deliveryPartnerCommission :",
+          deliveryPartnerCommission
+        );
         // Calculate vendor amount (total - vendor commission)
         const vendorAmount = totalPrice - vendorCommission;
 
         // Add money to vendor wallet
         // First, get or create vendor wallet
         let vendorWallet = await tx.vendorWallet.findUnique({
-          where: { vendorId: schedule.vendor.id }
+          where: { vendorId: schedule.vendor.id },
         });
 
         if (!vendorWallet) {
           vendorWallet = await tx.vendorWallet.create({
             data: {
               vendorId: schedule.vendor.id,
-              balance: 0
-            }
+              balance: 0,
+            },
           });
         }
 
         // Update vendor wallet balance
         await tx.vendorWallet.update({
           where: { id: vendorWallet.id },
-          data: { balance: { increment: vendorAmount } }
+          data: { balance: { increment: vendorAmount } },
         });
 
         // Create vendor wallet transaction
@@ -383,29 +439,29 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             vendorWalletId: vendorWallet.id,
             amount: vendorAmount,
             type: "CREDIT",
-            description: `Order payment for order #${schedule.order.id}`
-          }
+            description: `Order payment for order #${schedule.order.id}`,
+          },
         });
 
         // Add money to delivery partner wallet
         // First, get or create delivery partner wallet
         let deliveryWallet = await tx.deliveryWallet.findUnique({
-          where: { deliveryId: deliveryPartnerId }
+          where: { deliveryId: deliveryPartnerId },
         });
 
         if (!deliveryWallet) {
           deliveryWallet = await tx.deliveryWallet.create({
             data: {
               deliveryId: deliveryPartnerId,
-              balance: 0
-            }
+              balance: 0,
+            },
           });
         }
 
         // Update delivery wallet balance
         await tx.deliveryWallet.update({
           where: { id: deliveryWallet.id },
-          data: { balance: { increment: deliveryPartnerCommission } }
+          data: { balance: { increment: deliveryPartnerCommission } },
         });
 
         // Create delivery wallet transaction
@@ -415,8 +471,8 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             walletId: deliveryWallet.id,
             amount: deliveryPartnerCommission,
             type: "CREDIT",
-            description: `Delivery commission for order #${schedule.order.id}`
-          }
+            description: `Delivery commission for order #${schedule.order.id}`,
+          },
         });
 
         // Add money to admin wallet
@@ -430,8 +486,8 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             adminWallet = await tx.adminWallet.create({
               data: {
                 adminId: firstAdmin.id,
-                balance: 0
-              }
+                balance: 0,
+              },
             });
           }
         }
@@ -440,7 +496,7 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
           // Update admin wallet balance
           await tx.adminWallet.update({
             where: { id: adminWallet.id },
-            data: { balance: { increment: adminCommission } }
+            data: { balance: { increment: adminCommission } },
           });
 
           // Create admin wallet transaction
@@ -450,8 +506,8 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
               walletId: adminWallet.id,
               amount: adminCommission,
               type: "CREDIT",
-              discription: `Admin commission for order #${schedule.order.id}` // Note: 'discription' is correct as per schema
-            }
+              discription: `Admin commission for order #${schedule.order.id}`, // Note: 'discription' is correct as per schema
+            },
           });
         }
       }
@@ -464,7 +520,11 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             [schedule.order.user.id],
             `Order Status Updated`,
             `Your order #${schedule.order.id} status has been updated to ${status}.`,
-            { orderId: schedule.order.id.toString(), status, type: "ORDER_STATUS_UPDATE" }
+            {
+              orderId: schedule.order.id.toString(),
+              status,
+              type: "ORDER_STATUS_UPDATE",
+            }
           );
         }
 
@@ -474,7 +534,11 @@ export const updateScheduleStatusDeliveryPartner = async (req, res) => {
             [schedule.vendor.id],
             `Order Status Updated`,
             `Order #${schedule.order.id} status has been updated to ${status}.`,
-            { orderId: schedule.order.id.toString(), status, type: "ORDER_STATUS_UPDATE" }
+            {
+              orderId: schedule.order.id.toString(),
+              status,
+              type: "ORDER_STATUS_UPDATE",
+            }
           );
         }
       } catch (notificationError) {
@@ -680,11 +744,11 @@ export const getDeliveryPartnerDashboardStats = async (req, res) => {
           completionRate:
             totalTodaySchedules > 0
               ? (
-                ((todayStats.find((s) => s.status === "DELIVERED")?._count
-                  .id || 0) /
-                  totalTodaySchedules) *
-                100
-              ).toFixed(2)
+                  ((todayStats.find((s) => s.status === "DELIVERED")?._count
+                    .id || 0) /
+                    totalTodaySchedules) *
+                  100
+                ).toFixed(2)
               : 0,
         },
         weekly: {

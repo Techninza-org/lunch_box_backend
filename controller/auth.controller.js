@@ -9,7 +9,7 @@ import {
   sendUserNotification,
   sendDeliveryNotification,
   sendMultiTypeNotification,
-  getFirebaseAppStatus
+  getFirebaseAppStatus,
 } from "../utils/pushNoti.js";
 
 // Helper to index files by fieldname
@@ -27,7 +27,8 @@ function indexFiles(files) {
 
 // admin registration
 export const adminRegister = async (req, res) => {
-  const { name, email, password, permission, permissions, subname, subName } = req.body;
+  const { name, email, password, permission, permissions, subname, subName } =
+    req.body;
 
   // Only required: name, email, password
   if (!name || !email || !password) {
@@ -68,11 +69,7 @@ export const adminRegister = async (req, res) => {
 
   // Optional subName (accept 'subName' or 'subname')
   const finalSubName =
-    subName !== undefined
-      ? subName
-      : subname !== undefined
-        ? subname
-        : null;
+    subName !== undefined ? subName : subname !== undefined ? subname : null;
 
   try {
     const existingAdmin = await prisma.admin.findUnique({
@@ -120,7 +117,6 @@ export const adminRegister = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 // admin login
 export const adminLogin = async (req, res) => {
@@ -387,7 +383,6 @@ export const userLogin = async (req, res) => {
       return res.status(403).json({ message: "Account is not active" });
     }
 
-
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -400,7 +395,6 @@ export const userLogin = async (req, res) => {
         data: { fcmToken: fcmToken || null },
       });
     }
-
 
     // Exclude password from response
     const { password: _, ...userData } = user;
@@ -520,7 +514,6 @@ export const userVerifyOtpAndResetPassword = async (req, res) => {
       return res.status(403).json({ message: "Account is not active" });
     }
 
-
     // Check if OTP matches
     if (user.otp !== otp) {
       return res.status(400).json({
@@ -537,7 +530,6 @@ export const userVerifyOtpAndResetPassword = async (req, res) => {
         message: "OTP has expired",
       });
     }
-
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -687,7 +679,9 @@ export const vendorLogin = async (req, res) => {
     }
 
     if (vendor.isDeleted == true || vendor.status === "PENDING") {
-      return res.status(403).json({ message: "Account is not active or pending approval" });
+      return res
+        .status(403)
+        .json({ message: "Account is not active or pending approval" });
     }
 
     // Check password
@@ -695,7 +689,6 @@ export const vendorLogin = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
-
 
     // Update FCM token if provided
     if (fcmToken) {
@@ -897,8 +890,8 @@ export const deliveryPartnerRegister = async (req, res) => {
       : null;
     const documentImages = filesByField["documents"]
       ? filesByField["documents"].map(
-        (file) => `uploads/delivery-partners/${file.filename}`
-      )
+          (file) => `uploads/delivery-partners/${file.filename}`
+        )
       : [];
 
     // Validate profile image and document images
@@ -968,7 +961,7 @@ export const deliveryPartnerRegister = async (req, res) => {
 
 // delivery partner login
 export const deliveryPartnerLogin = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, fcmToken } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password are required" });
@@ -1003,6 +996,12 @@ export const deliveryPartnerLogin = async (req, res) => {
     );
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+    if (fcmToken) {
+      await prisma.deliveryPartner.update({
+        where: { email },
+        data: { fcmToken: fcmToken || null },
+      });
     }
 
     // Exclude password from response
@@ -1053,7 +1052,6 @@ export const deliveryForgotPassword = async (req, res) => {
     if (deliveryPartner.isDeleted === true) {
       return res.status(403).json({ message: "Account is not active" });
     }
-
 
     // Generate OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -1128,7 +1126,6 @@ export const deliveryVerifyOtpAndResetPassword = async (req, res) => {
       return res.status(403).json({ message: "Account is not active" });
     }
 
-
     // Check if OTP matches
     if (deliveryPartner.otp !== otp) {
       return res.status(400).json({
@@ -1173,8 +1170,6 @@ export const deliveryVerifyOtpAndResetPassword = async (req, res) => {
   }
 };
 
-
-
 // test push notification user
 
 export const testPushNotificationUser = async (req, res) => {
@@ -1185,30 +1180,35 @@ export const testPushNotificationUser = async (req, res) => {
     if (!userids || !title || !message) {
       return res.status(400).json({
         success: false,
-        message: "User, title, and message are required"
+        message: "User, title, and message are required",
       });
     }
 
     // Send notification
-    const result = await sendUserNotification(userids, title, message, data || {});
+    const result = await sendUserNotification(
+      userids,
+      title,
+      message,
+      data || {}
+    );
 
     if (result.success) {
       return res.status(200).json({
         success: true,
         message: "Notifications sent successfully",
-        data: result
+        data: result,
       });
     } else {
       return res.status(500).json({
         success: false,
-        message: result.message
+        message: result.message,
       });
     }
   } catch (error) {
     console.error("Error in notifyVendorsOnOrder:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
@@ -1218,32 +1218,72 @@ export const testPushNotificationVendors = async (req, res) => {
   try {
     const { vendorids, title, message, data } = req.body;
 
-
     if (!vendorids || !title || !message) {
       return res.status(400).json({
         success: false,
-        message: "Vendor, title, and message are required"
+        message: "Vendor, title, and message are required",
       });
     }
-    const result = await sendVendorNotification(vendorids, title, message, data || {});
+    const result = await sendVendorNotification(
+      vendorids,
+      title,
+      message,
+      data || {}
+    );
     if (result.success) {
       return res.status(200).json({
         success: true,
         message: "Notifications sent successfully",
-        data: result
+        data: result,
       });
     } else {
       return res.status(500).json({
         success: false,
-        message: result.message
+        message: result.message,
       });
     }
-
   } catch (error) {
     console.error("Error in notifyVendorsOnOrder:", error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Internal server error",
+    });
+  }
+};
+
+// test push notification delivery partner
+export const testPushNotificationDeliveryPartners = async (req, res) => {
+  try {
+    const { deliveryPartnerids, title, message, data } = req.body;
+    if (!deliveryPartnerids || !title || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery partner, title, and message are required",
+      });
+    }
+    const result = await sendDeliveryNotification(
+      deliveryPartnerids,
+      title,
+      message,
+      data || {}
+    );
+    if (result.success) {
+      return res.status(200).json({
+        success: true,
+        message: "Notifications sent successfully",
+        data: result,
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: result.message,
+      });
+    }
+  } catch (error) {
+    console.error("Error in notifyDeliveryPartnersOnOrder:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

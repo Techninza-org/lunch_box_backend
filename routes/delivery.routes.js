@@ -14,6 +14,7 @@ import {
   addOrUpdateDeliveryBankDetail,
   getDeliveryPartnerOrders,
   getDeliveryPartnerProfile
+  saveCurrentLocationDeliveryPartner,
 } from "../controller/delivery.controller.js";
 import {
   createSupportTicket,
@@ -32,6 +33,9 @@ import { getMulterUpload } from "../utils/multer.js";
 const deliveryPartner = getMulterUpload("delivery-partners");
 
 const router = Router();
+
+// save current location
+router.post("/save-current-location", saveCurrentLocationDeliveryPartner);
 
 // Delivery partner schedule management
 router.get("/schedules", getDeliveryPartnerSchedules);

@@ -16,11 +16,15 @@ function indexFiles(files) {
 
 export const getDeliveryBanners = async (req, res) => {
   try {
-    const banners = await prisma.banner.findMany({ where: { audience: "DELIVERY_PARTNER", isActive: true } });
+    const banners = await prisma.banner.findMany({
+      where: { audience: "DELIVERY_PARTNER", isActive: true },
+    });
     return res.status(200).json({ success: true, data: banners });
   } catch (error) {
     console.error("Error fetching delivery banners:", error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -28,16 +32,15 @@ export const getDeliveryNotifications = async (req, res) => {
   const deliveryId = req.user?.id;
 
   if (!deliveryId || isNaN(deliveryId)) {
-    return res.status(401).json({ message: "Unauthorized or invalid DELIVERY_PARTNER ID" });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized or invalid DELIVERY_PARTNER ID" });
   }
 
   try {
     const notifications = await prisma.notification.findMany({
       where: {
-        OR: [
-          { userId: deliveryId },
-          { role: "DELIVERY_PARTNER" },
-        ],
+        OR: [{ userId: deliveryId }, { role: "DELIVERY_PARTNER" }],
       },
       orderBy: {
         createdAt: "desc",
@@ -56,7 +59,9 @@ export const getTodayMealSchedulesForDeliveryPartner = async (req, res) => {
     const deliveryPartnerId = req.user?.id;
 
     if (!deliveryPartnerId) {
-      return res.status(401).json({ error: "Unauthorized: Missing delivery partner ID" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Missing delivery partner ID" });
     }
 
     // Get today's start and end timestamps (00:00 to 23:59)
@@ -73,7 +78,7 @@ export const getTodayMealSchedulesForDeliveryPartner = async (req, res) => {
         },
       },
       orderBy: {
-        scheduledDate: 'asc',
+        scheduledDate: "asc",
       },
     });
 
@@ -114,7 +119,9 @@ export const getMealsByDeliveryPartner = async (req, res) => {
     const deliveryPartnerId = req.user?.id;
 
     if (!deliveryPartnerId) {
-      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Delivery partner ID missing" });
     }
 
     const meals = await prisma.mealSchedule.findMany({
@@ -122,7 +129,7 @@ export const getMealsByDeliveryPartner = async (req, res) => {
         deliveryPartnerId,
       },
       orderBy: {
-        scheduledDate: 'asc',
+        scheduledDate: "asc",
       },
       include: {
         order: {
@@ -157,9 +164,10 @@ export const updateDeliveryPartnerProfile = async (req, res) => {
     const deliveryPartnerId = req.user?.id;
     const filesByField = indexFiles(req.files);
 
-
     if (!deliveryPartnerId) {
-      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Delivery partner ID missing" });
     }
 
     const {
@@ -180,9 +188,7 @@ export const updateDeliveryPartnerProfile = async (req, res) => {
 
     // Validate profile image
     if (!profileImage) {
-      return res
-        .status(400)
-        .json({ message: "Profile image is required" });
+      return res.status(400).json({ message: "Profile image is required" });
     }
 
     const updatedPartner = await prisma.deliveryPartner.update({
@@ -206,8 +212,10 @@ export const updateDeliveryPartnerProfile = async (req, res) => {
   } catch (error) {
     console.error("Error updating delivery partner profile:", error);
 
-    if (error.code === 'P2002') {
-      return res.status(400).json({ error: "Phone number or email already in use" });
+    if (error.code === "P2002") {
+      return res
+        .status(400)
+        .json({ error: "Phone number or email already in use" });
     }
 
     return res.status(500).json({ error: "Internal server error" });
@@ -218,15 +226,12 @@ export const addOrUpdateDeliveryBankDetail = async (req, res) => {
   const deliveryId = req.user?.id;
 
   if (!deliveryId || isNaN(deliveryId)) {
-    return res.status(401).json({ message: "Unauthorized or invalid delivery ID" });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized or invalid delivery ID" });
   }
 
-  const {
-    accountHolder,
-    accountNumber,
-    ifscCode,
-    bankName,
-  } = req.body;
+  const { accountHolder, accountNumber, ifscCode, bankName } = req.body;
 
   if (!accountHolder || !accountNumber || !ifscCode || !bankName) {
     return res.status(400).json({ message: "Required fields missing" });
@@ -288,7 +293,9 @@ export const getDeliveryPartnerProfile = async (req, res) => {
     const deliveryPartnerId = req.user?.id;
 
     if (!deliveryPartnerId) {
-      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Delivery partner ID missing" });
     }
 
     // Get delivery partner profile with related data
@@ -344,7 +351,6 @@ export const getDeliveryPartnerProfile = async (req, res) => {
       message: "Profile retrieved successfully",
       data: deliveryPartner,
     });
-
   } catch (error) {
     console.error("Error fetching delivery partner profile:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -354,10 +360,12 @@ export const getDeliveryPartnerProfile = async (req, res) => {
 export const getDeliveryPartnerOrders = async (req, res) => {
   try {
     const deliveryPartnerId = req.user?.id;
-    const { filter = 'today' } = req.query; // today, yesterday, lastWeek, lastMonth
+    const { filter = "today" } = req.query; // today, yesterday, lastWeek, lastMonth
 
     if (!deliveryPartnerId) {
-      return res.status(401).json({ error: "Unauthorized: Delivery partner ID missing" });
+      return res
+        .status(401)
+        .json({ error: "Unauthorized: Delivery partner ID missing" });
     }
 
     // Calculate date ranges based on filter
@@ -365,28 +373,51 @@ export const getDeliveryPartnerOrders = async (req, res) => {
     let startDate, endDate;
 
     switch (filter) {
-      case 'today':
+      case "today":
         startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          23,
+          59,
+          59,
+          999
+        );
         break;
 
-      case 'yesterday':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+      case "yesterday":
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1
+        );
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 1,
+          23,
+          59,
+          59,
+          999
+        );
         break;
 
-      case 'lastWeek':
-        startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+      case "lastWeek":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         endDate = now;
         break;
 
-      case 'lastMonth':
-        startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      case "lastMonth":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         endDate = now;
         break;
 
       default:
-        return res.status(400).json({ error: "Invalid filter. Use: today, yesterday, lastWeek, or lastMonth" });
+        return res.status(400).json({
+          error:
+            "Invalid filter. Use: today, yesterday, lastWeek, or lastMonth",
+        });
     }
 
     // Get meal schedules for the delivery partner within the date range
@@ -399,7 +430,7 @@ export const getDeliveryPartnerOrders = async (req, res) => {
         },
       },
       orderBy: {
-        scheduledDate: 'asc',
+        scheduledDate: "asc",
       },
       include: {
         order: {
@@ -430,21 +461,45 @@ export const getDeliveryPartnerOrders = async (req, res) => {
 
     // Calculate summary statistics
     const totalMeals = meals.length;
-    const totalAmount = meals.reduce((sum, meal) => sum + (meal.order?.totalAmount || 0), 0);
-    const pendingMeals = meals.filter(meal => meal.status === 'SCHEDULED').length;
-    const preparedMeals = meals.filter(meal => meal.status === 'PREPARED').length;
-    const outForDeliveryMeals = meals.filter(meal => meal.status === 'OUT_FOR_DELIVERY').length;
-    const deliveredMeals = meals.filter(meal => meal.status === 'DELIVERED').length;
-    const cancelledMeals = meals.filter(meal => meal.status === 'CANCELLED').length;
+    const totalAmount = meals.reduce(
+      (sum, meal) => sum + (meal.order?.totalAmount || 0),
+      0
+    );
+    const pendingMeals = meals.filter(
+      (meal) => meal.status === "SCHEDULED"
+    ).length;
+    const preparedMeals = meals.filter(
+      (meal) => meal.status === "PREPARED"
+    ).length;
+    const outForDeliveryMeals = meals.filter(
+      (meal) => meal.status === "OUT_FOR_DELIVERY"
+    ).length;
+    const deliveredMeals = meals.filter(
+      (meal) => meal.status === "DELIVERED"
+    ).length;
+    const cancelledMeals = meals.filter(
+      (meal) => meal.status === "CANCELLED"
+    ).length;
 
     // Group meals by status
     const mealsByStatus = {
-      scheduled: meals.filter(meal => meal.status === 'SCHEDULED'),
-      prepared: meals.filter(meal => meal.status === 'PREPARED'),
-      outForDelivery: meals.filter(meal => meal.status === 'OUT_FOR_DELIVERY'),
-      delivered: meals.filter(meal => meal.status === 'DELIVERED'),
-      cancelled: meals.filter(meal => meal.status === 'CANCELLED'),
-      other: meals.filter(meal => !['SCHEDULED', 'PREPARED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'].includes(meal.status)),
+      scheduled: meals.filter((meal) => meal.status === "SCHEDULED"),
+      prepared: meals.filter((meal) => meal.status === "PREPARED"),
+      outForDelivery: meals.filter(
+        (meal) => meal.status === "OUT_FOR_DELIVERY"
+      ),
+      delivered: meals.filter((meal) => meal.status === "DELIVERED"),
+      cancelled: meals.filter((meal) => meal.status === "CANCELLED"),
+      other: meals.filter(
+        (meal) =>
+          ![
+            "SCHEDULED",
+            "PREPARED",
+            "OUT_FOR_DELIVERY",
+            "DELIVERED",
+            "CANCELLED",
+          ].includes(meal.status)
+      ),
     };
 
     return res.status(200).json({
@@ -470,9 +525,37 @@ export const getDeliveryPartnerOrders = async (req, res) => {
       mealsByStatus,
       meals,
     });
-
   } catch (error) {
     console.error("Error fetching delivery partner meal schedules:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
+};
+
+// save current location
+export const saveCurrentLocationDeliveryPartner = async (req, res) => {
+  const deliveryPartnerId = req.user?.id;
+  const { latitude, longitude } = req.body;
+
+  if (!deliveryPartnerId) {
+    return res
+      .status(401)
+      .json({ error: "Unauthorized: Delivery partner ID missing" });
+  }
+
+  if (!latitude || !longitude) {
+    return res
+      .status(400)
+      .json({ error: "Latitude and longitude are required" });
+  }
+
+  const updatedDeliveryPartner = await prisma.deliveryPartner.update({
+    where: { id: deliveryPartnerId },
+    data: { latitude: parseFloat(latitude), longitude: parseFloat(longitude) },
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Current location saved successfully",
+    data: updatedDeliveryPartner,
+  });
 };

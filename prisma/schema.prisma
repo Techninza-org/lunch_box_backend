@@ -65,6 +65,8 @@ model DeliveryPartner {
   DeliveryRequestWithdrawalAmount DeliveryRequestWithdrawalAmount[]
 }
 
+
+
 model DeliveryBankDetail {
   id            Int      @id @default(autoincrement())
   deliveryId    Int      @unique

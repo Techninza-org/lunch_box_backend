@@ -27,6 +27,7 @@ import {
   verifyDeliveryWalletPayment,
   getDeliveryWallet,
   createDeliveryDebitTransaction,
+  requestWithdrawalDeliveryPartner,
 } from "../controller/payment.controller.js";
 
 import { getMulterUpload } from "../utils/multer.js";
@@ -80,6 +81,9 @@ router.post("/create-delivery-wallet-order", createDeliveryWalletOrder);
 router.post("/verify-delivery-wallet", verifyDeliveryWalletPayment);
 router.get("/get-delivery-wallet", getDeliveryWallet);
 router.post("/debit-delivery-wallet", createDeliveryDebitTransaction);
+
+// request withdrawal
+router.post("/request-withdrawal", requestWithdrawalDeliveryPartner);
 
 // online offline toggle
 router.put("/toggle-online-offline", toggleOnlineOfflineDeliveryPartner);

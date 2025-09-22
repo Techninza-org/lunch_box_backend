@@ -1003,3 +1003,302 @@ export const createAdminDebitTransaction = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// --------------Delivery Partner request withdrawal----------------//
+
+export const requestWithdrawalDeliveryPartner = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const deliveryPartnerId = req.user?.id;
+
+    if (!deliveryPartnerId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "deliveryPartnerId and amount are required",
+      });
+    }
+
+    // Validate amount
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than 0",
+      });
+    }
+
+    // Check delivery partner and wallet balance
+    const deliveryPartner = await prisma.deliveryPartner.findUnique({
+      where: { id: deliveryPartnerId },
+      include: { DeliveryWallet: true },
+    });
+
+    if (!deliveryPartner) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery partner not found",
+      });
+    }
+
+    if (!deliveryPartner.DeliveryWallet) {
+      return res.status(404).json({
+        success: false,
+        message: "Delivery wallet not found",
+      });
+    }
+
+    const wallet = deliveryPartner.DeliveryWallet;
+
+    // Check if sufficient balance
+    if (wallet.balance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Available balance: ₹${wallet.balance}`,
+      });
+    }
+
+    // Create withdrawal request
+    const withdrawalRequest =
+      await prisma.deliveryRequestWithdrawalAmount.create({
+        data: {
+          deliveryId: deliveryPartnerId,
+          amount: parseFloat(amount),
+          status: "PENDING",
+        },
+      });
+
+    return res.status(201).json({
+      success: true,
+      message: "Withdrawal request created successfully",
+      data: {
+        requestId: withdrawalRequest.id,
+        amount: withdrawalRequest.amount,
+        status: withdrawalRequest.status,
+        createdAt: withdrawalRequest.createdAt,
+        availableBalance: wallet.balance,
+      },
+    });
+  } catch (error) {
+    console.error("Error in createDeliveryPartnerRequestWithdrawal:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// --------------Vendor request withdrawal----------------//
+
+export const createVendorRequestWithdrawal = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const vendorId = req.user?.id;
+
+    if (!vendorId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "vendorId and amount are required",
+      });
+    }
+
+    // Validate amount
+    if (amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than 0",
+      });
+    }
+
+    // Check vendor and wallet balance
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: { VendorWallet: true },
+    });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor not found",
+      });
+    }
+
+    if (!vendor.VendorWallet || vendor.VendorWallet.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vendor wallet not found",
+      });
+    }
+
+    const wallet = vendor.VendorWallet[0]; // VendorWallet is an array in schema
+
+    // Check if sufficient balance
+    if (wallet.balance < amount) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient balance. Available balance: ₹${wallet.balance}`,
+      });
+    }
+
+    // Create withdrawal request
+    const withdrawalRequest = await prisma.vendorRequestWithdrawalAmount.create(
+      {
+        data: {
+          vendorId: vendorId,
+          amount: parseFloat(amount),
+          status: "PENDING",
+        },
+      }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Withdrawal request created successfully",
+      data: {
+        requestId: withdrawalRequest.id,
+        amount: withdrawalRequest.amount,
+        status: withdrawalRequest.status,
+        createdAt: withdrawalRequest.createdAt,
+        availableBalance: wallet.balance,
+      },
+    });
+  } catch (error) {
+    console.error("Error in createVendorRequestWithdrawal:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// --------------Get Delivery Partner Withdrawal Requests----------------//
+
+export const getDeliveryPartnerWithdrawalRequests = async (req, res) => {
+  try {
+    const deliveryPartnerId = req.user?.id;
+    const { page = 1, limit = 10, status } = req.query;
+
+    if (!deliveryPartnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery partner ID is required",
+      });
+    }
+
+    const whereClause = { deliveryId: deliveryPartnerId };
+    if (
+      status &&
+      ["PENDING", "APPROVED", "REJECTED", "COMPLETED"].includes(status)
+    ) {
+      whereClause.status = status;
+    }
+
+    const withdrawalRequests =
+      await prisma.deliveryRequestWithdrawalAmount.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        include: {
+          deliveryPartner: {
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      });
+
+    const totalRequests = await prisma.deliveryRequestWithdrawalAmount.count({
+      where: whereClause,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        withdrawalRequests,
+        pagination: {
+          currentPage: Number(page),
+          totalPages: Math.ceil(totalRequests / Number(limit)),
+          totalRequests,
+          hasNextPage: Number(page) * Number(limit) < totalRequests,
+          hasPrevPage: Number(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error(
+      "Error fetching delivery partner withdrawal requests:",
+      error
+    );
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// --------------Get Vendor Withdrawal Requests----------------//
+
+export const getVendorWithdrawalRequests = async (req, res) => {
+  try {
+    const vendorId = req.user?.id;
+    const { page = 1, limit = 10, status } = req.query;
+
+    if (!vendorId) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor ID is required",
+      });
+    }
+
+    const whereClause = { vendorId: vendorId };
+    if (
+      status &&
+      ["PENDING", "APPROVED", "REJECTED", "COMPLETED"].includes(status)
+    ) {
+      whereClause.status = status;
+    }
+
+    const withdrawalRequests =
+      await prisma.vendorRequestWithdrawalAmount.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        include: {
+          vendor: {
+            select: {
+              id: true,
+              name: true,
+              businessName: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      });
+
+    const totalRequests = await prisma.vendorRequestWithdrawalAmount.count({
+      where: whereClause,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        withdrawalRequests,
+        pagination: {
+          currentPage: Number(page),
+          totalPages: Math.ceil(totalRequests / Number(limit)),
+          totalRequests,
+          hasNextPage: Number(page) * Number(limit) < totalRequests,
+          hasPrevPage: Number(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching vendor withdrawal requests:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

@@ -15,7 +15,7 @@ export const addUserCurrentLocation = async (req, res) => {
 
     const { latitude, longitude } = req.body;
 
-    console.log("latitude", latitude, "longitude", longitude)
+    console.log("latitude", latitude, "longitude", longitude);
 
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({
@@ -45,7 +45,7 @@ export const addUserCurrentLocation = async (req, res) => {
       },
     });
 
-    console.log("Updated User:", updatedUser)
+    console.log("Updated User:", updatedUser);
 
     res.status(200).json({
       data: updatedUser,
@@ -65,7 +65,9 @@ export const addUserCurrentLocation = async (req, res) => {
 export const getHomePage = async (req, res) => {
   try {
     // Fetch necessary data for the home page (user audience banners only)
-    const banners = await prisma.banner.findMany({ where: { audience: "USER", isActive: true } });
+    const banners = await prisma.banner.findMany({
+      where: { audience: "USER", isActive: true },
+    });
 
     const vendors = await prisma.vendor.findMany({
       where: { status: "APPROVED", isDeleted: false, isActive: true },
@@ -88,14 +90,31 @@ export const getHomePage = async (req, res) => {
         eveningEnd: true,
         dinnerStart: true,
         dinnerEnd: true,
+        Meal: {
+          where: { isAvailable: true },
+          select: {
+            basePrice: true,
+          },
+          orderBy: {
+            basePrice: "asc",
+          },
+          take: 1,
+        },
       },
     });
+
+    // Add lowest price to each vendor
+    const vendorsWithLowestPrice = vendors.map((vendor) => ({
+      ...vendor,
+      lowestMealPrice: vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null,
+      Meal: undefined, // Remove the Meal array from response
+    }));
 
     res.status(200).json({
       success: true,
       data: {
         banners,
-        vendors,
+        vendors: vendorsWithLowestPrice,
       },
     });
   } catch (error) {
@@ -157,12 +176,29 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
         dinnerEnd: true,
         isActive: true,
         createdAt: true,
+        Meal: {
+          where: { isAvailable: true },
+          select: {
+            basePrice: true,
+          },
+          orderBy: {
+            basePrice: "asc",
+          },
+          take: 1,
+        },
       },
     });
 
+    // Add lowest price to each vendor
+    const vendorsWithLowestPrice = vendors.map((vendor) => ({
+      ...vendor,
+      lowestMealPrice: vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null,
+      Meal: undefined, // Remove the Meal array from response
+    }));
+
     res.status(200).json({
       success: true,
-      data: vendors,
+      data: vendorsWithLowestPrice,
     });
   } catch (error) {
     console.error("Error fetching vendors by user location:", error);
@@ -261,7 +297,7 @@ export const getRestaurantsById = async (req, res) => {
           mealId: true,
         },
       });
-      cartMealIds = new Set(cartItems.map(item => item.mealId));
+      cartMealIds = new Set(cartItems.map((item) => item.mealId));
     }
 
     // Group meals by type
@@ -653,9 +689,10 @@ export const addAddress = async (req, res) => {
       return newAddress;
     });
 
-    const message = existingAddresses.length === 0
-      ? "Address added successfully and set as default."
-      : "Address added successfully.";
+    const message =
+      existingAddresses.length === 0
+        ? "Address added successfully and set as default."
+        : "Address added successfully.";
 
     return res.status(201).json({
       success: true,
@@ -694,14 +731,15 @@ export const setDefaultAddress = async (req, res) => {
     const address = await prisma.userAddress.findFirst({
       where: {
         id: parseInt(addressId),
-        userId: userId
+        userId: userId,
       },
     });
 
     if (!address) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Address not found or doesn't belong to user" });
+      return res.status(404).json({
+        success: false,
+        message: "Address not found or doesn't belong to user",
+      });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -810,7 +848,8 @@ export const deleteAddress = async (req, res) => {
     if (userAddressCount === 1) {
       return res.status(400).json({
         success: false,
-        message: "Cannot delete the only address. Please add another address first.",
+        message:
+          "Cannot delete the only address. Please add another address first.",
       });
     }
 
@@ -848,7 +887,7 @@ export const deleteAddress = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Something went wrong while deleting the address",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -992,7 +1031,6 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-
 export const getVendorsByMealType = async (req, res) => {
   try {
     let { type } = req.query;
@@ -1088,11 +1126,12 @@ export const getMealsByType = async (req, res) => {
     const { type } = req.params;
 
     // Validate meal type
-    const validMealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Evening'];
+    const validMealTypes = ["Breakfast", "Lunch", "Dinner", "Evening"];
     if (!validMealTypes.includes(type)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid meal type. Valid types are: Breakfast, Lunch, Dinner, Evening",
+        message:
+          "Invalid meal type. Valid types are: Breakfast, Lunch, Dinner, Evening",
       });
     }
 
@@ -1138,7 +1177,7 @@ export const getMealsByType = async (req, res) => {
     });
 
     // Add timing information to each meal based on its type
-    const mealsWithTiming = meals.map(meal => {
+    const mealsWithTiming = meals.map((meal) => {
       if (meal.vendor) {
         let timing = null;
         switch (meal.type) {
@@ -1270,7 +1309,9 @@ export const getFilteredMeals = async (req, res) => {
     const vendorId = parseInt(req.params.vendorId);
 
     if (!vendorId) {
-      return res.status(400).json({ success: false, message: "Vendor ID required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Vendor ID required" });
     }
 
     const { isVeg, cuisine, sort } = req.query;
@@ -1290,7 +1331,7 @@ export const getFilteredMeals = async (req, res) => {
     if (cuisine) {
       filters.cuisine = {
         contains: cuisine,
-        // mode: "insensitive" 
+        // mode: "insensitive"
       };
     }
 
@@ -1339,7 +1380,7 @@ export const debugMealData = async (req, res) => {
   try {
     // Get counts of different meal types
     const mealTypeCounts = await prisma.meal.groupBy({
-      by: ['type'],
+      by: ["type"],
       _count: {
         _all: true,
       },
@@ -1347,7 +1388,7 @@ export const debugMealData = async (req, res) => {
 
     // Get counts of meals by availability
     const availabilityCounts = await prisma.meal.groupBy({
-      by: ['isAvailable'],
+      by: ["isAvailable"],
       _count: {
         _all: true,
       },
@@ -1355,7 +1396,7 @@ export const debugMealData = async (req, res) => {
 
     // Get counts of meals by verification status
     const verificationCounts = await prisma.meal.groupBy({
-      by: ['isVerified'],
+      by: ["isVerified"],
       _count: {
         _all: true,
       },
@@ -1363,7 +1404,7 @@ export const debugMealData = async (req, res) => {
 
     // Get counts of meals by deletion status
     const deletionCounts = await prisma.meal.groupBy({
-      by: ['isDeleted'],
+      by: ["isDeleted"],
       _count: {
         _all: true,
       },
@@ -1387,9 +1428,3 @@ export const debugMealData = async (req, res) => {
     });
   }
 };
-
-
-
-
-
-

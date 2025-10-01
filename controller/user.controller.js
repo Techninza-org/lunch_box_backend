@@ -1,6 +1,29 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+// Utility function to calculate average rating for a vendor
+const calculateVendorRating = (meals) => {
+  let totalRating = 0;
+  let totalRatings = 0;
+
+  meals.forEach((meal) => {
+    if (meal.Rating && meal.Rating.length > 0) {
+      meal.Rating.forEach((rating) => {
+        totalRating += rating.score;
+        totalRatings++;
+      });
+    }
+  });
+
+  const averageRating =
+    totalRatings > 0 ? (totalRating / totalRatings).toFixed(1) : null;
+
+  return {
+    averageRating: averageRating ? parseFloat(averageRating) : null,
+    totalRatings,
+  };
+};
+
 import { saveNotification } from "../utils/saveNotification.js";
 
 export const addUserCurrentLocation = async (req, res) => {
@@ -94,27 +117,43 @@ export const getHomePage = async (req, res) => {
           where: { isAvailable: true },
           select: {
             basePrice: true,
+            id: true,
+            Rating: {
+              select: {
+                score: true,
+              },
+            },
           },
           orderBy: {
             basePrice: "asc",
           },
-          take: 1,
         },
       },
     });
 
-    // Add lowest price to each vendor
-    const vendorsWithLowestPrice = vendors.map((vendor) => ({
-      ...vendor,
-      lowestMealPrice: vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null,
-      Meal: undefined, // Remove the Meal array from response
-    }));
+    // Add lowest price and average rating to each vendor
+    const vendorsWithLowestPriceAndRating = vendors.map((vendor) => {
+      // Calculate lowest meal price
+      const lowestMealPrice =
+        vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null;
+
+      // Calculate average rating using utility function
+      const ratingData = calculateVendorRating(vendor.Meal);
+
+      return {
+        ...vendor,
+        lowestMealPrice,
+        averageRating: ratingData.averageRating,
+        totalRatings: ratingData.totalRatings,
+        Meal: undefined, // Remove the Meal array from response
+      };
+    });
 
     res.status(200).json({
       success: true,
       data: {
         banners,
-        vendors: vendorsWithLowestPrice,
+        vendors: vendorsWithLowestPriceAndRating,
       },
     });
   } catch (error) {
@@ -180,25 +219,41 @@ export const getAllRestaurantsByUserLocation = async (req, res) => {
           where: { isAvailable: true },
           select: {
             basePrice: true,
+            id: true,
+            Rating: {
+              select: {
+                score: true,
+              },
+            },
           },
           orderBy: {
             basePrice: "asc",
           },
-          take: 1,
         },
       },
     });
 
-    // Add lowest price to each vendor
-    const vendorsWithLowestPrice = vendors.map((vendor) => ({
-      ...vendor,
-      lowestMealPrice: vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null,
-      Meal: undefined, // Remove the Meal array from response
-    }));
+    // Add lowest price and average rating to each vendor
+    const vendorsWithLowestPriceAndRating = vendors.map((vendor) => {
+      // Calculate lowest meal price
+      const lowestMealPrice =
+        vendor.Meal.length > 0 ? vendor.Meal[0].basePrice : null;
+
+      // Calculate average rating using utility function
+      const ratingData = calculateVendorRating(vendor.Meal);
+
+      return {
+        ...vendor,
+        lowestMealPrice,
+        averageRating: ratingData.averageRating,
+        totalRatings: ratingData.totalRatings,
+        Meal: undefined, // Remove the Meal array from response
+      };
+    });
 
     res.status(200).json({
       success: true,
-      data: vendorsWithLowestPrice,
+      data: vendorsWithLowestPriceAndRating,
     });
   } catch (error) {
     console.error("Error fetching vendors by user location:", error);
@@ -280,6 +335,11 @@ export const getRestaurantsById = async (req, res) => {
         availableDays: true, // Available days
         dietaryTags: true, // Dietary tags
         ingredients: true, // Ingredients
+        Rating: {
+          select: {
+            score: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -342,9 +402,16 @@ export const getRestaurantsById = async (req, res) => {
       }
     });
 
+    // Calculate average rating for the restaurant
+    const ratingData = calculateVendorRating(meals);
+
     // Structure the response
     const restaurantData = {
-      vendorInfo: vendor,
+      vendorInfo: {
+        ...vendor,
+        averageRating: ratingData.averageRating,
+        totalRatings: ratingData.totalRatings,
+      },
       menu: menuCategories,
       totalItems: meals.length,
     };
@@ -1099,6 +1166,11 @@ export const getVendorsByMealType = async (req, res) => {
             id: true,
             title: true,
             basePrice: true,
+            Rating: {
+              select: {
+                score: true,
+              },
+            },
           },
         },
       },
@@ -1107,10 +1179,22 @@ export const getVendorsByMealType = async (req, res) => {
       },
     });
 
+    // Add average rating to each vendor
+    const vendorsWithRating = vendors.map((vendor) => {
+      // Calculate average rating using utility function
+      const ratingData = calculateVendorRating(vendor.Meal);
+
+      return {
+        ...vendor,
+        averageRating: ratingData.averageRating,
+        totalRatings: ratingData.totalRatings,
+      };
+    });
+
     return res.status(200).json({
       success: true,
-      count: vendors.length,
-      data: vendors,
+      count: vendorsWithRating.length,
+      data: vendorsWithRating,
     });
   } catch (error) {
     console.error("Error fetching vendors by meal type:", error);

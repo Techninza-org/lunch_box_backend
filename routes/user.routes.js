@@ -23,13 +23,15 @@ import {
   getFilteredMeals,
   getMealsByType,
   debugMealData, // Add this import
-
+  getCompletedOrdersForRating,
+  addMealRating,
+  getUserRatingHistory,
 } from "../controller/user.controller.js";
 
 import {
   createSupportTicket,
   getSupportTickets,
-  sendMessageToSupportTicket
+  sendMessageToSupportTicket,
 } from "../controller/support.controller.js";
 
 import {
@@ -47,7 +49,7 @@ import {
   createUserWalletOrder,
   verifyUserWalletPayment,
   getUserWallet,
-  createUserDebitTransaction
+  createUserDebitTransaction,
 } from "../controller/payment.controller.js";
 
 const logoUpload = getMulterUpload("users");
@@ -112,16 +114,23 @@ router.post("/verify-user-wallet", verifyUserWalletPayment);
 router.get("/get-user-wallet", getUserWallet);
 router.post("/debit-user-wallet", createUserDebitTransaction);
 
-
 // Support routes
 router.post("/create-user-support-ticket", createSupportTicket);
 router.get("/get-user-support-tickets", getSupportTickets);
-router.post("/send-message-to-support-ticket-user/:ticketId", sendMessageToSupportTicket);
+router.post(
+  "/send-message-to-support-ticket-user/:ticketId",
+  sendMessageToSupportTicket
+);
 
 // Wishlist routes
 
 router.post("/add-user-wishlist", addToWishlist);
 router.delete("/remove-user-wishlist", removeFromWishlist);
 router.get("/get-all-user-wishlist", getUserWishlist);
+
+// Rating routes
+router.get("/completed-orders-for-rating", getCompletedOrdersForRating);
+router.post("/add-meal-rating", addMealRating);
+router.get("/rating-history", getUserRatingHistory);
 
 export default router;

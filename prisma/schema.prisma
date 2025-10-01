@@ -65,8 +65,6 @@ model DeliveryPartner {
   DeliveryRequestWithdrawalAmount DeliveryRequestWithdrawalAmount[]
 }
 
-
-
 model DeliveryBankDetail {
   id            Int      @id @default(autoincrement())
   deliveryId    Int      @unique
@@ -685,6 +683,7 @@ model OrderItem {
   order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   meal            Meal?             @relation(fields: [mealId], references: [id])
   selectedOptions OrderItemOption[]
+  Rating          Rating[]
 }
 
 model OrderItemOption {
@@ -875,14 +874,16 @@ model Wishlist {
 }
 
 model Rating {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  mealId    Int
-  score     Int      @default(0) // Rating score (e.g., 1-5)
-  createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  mealId      Int
+  orderItemId Int
+  score       Int      @default(0) // Rating score (e.g., 1-5)
+  createdAt   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal      Meal      @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, mealId]) // prevents duplicate ratings
   @@index([userId])

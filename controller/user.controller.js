@@ -1512,3 +1512,313 @@ export const debugMealData = async (req, res) => {
     });
   }
 };
+
+// --------------Rating Functions----------------//
+
+// Get user's completed orders that can be rated
+export const getCompletedOrdersForRating = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required",
+      });
+    }
+
+    // Get completed orders with their order items
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: userId,
+        status: "COMPLETED",
+      },
+      include: {
+        orderItems: {
+          where: {
+            // Only include items that haven't been rated yet
+            Rating: {
+              none: {
+                userId: userId,
+              },
+            },
+          },
+          include: {
+            meal: {
+              select: {
+                id: true,
+                title: true,
+                image: true,
+                type: true,
+              },
+            },
+          },
+        },
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            businessName: true,
+            logo: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
+
+    // Filter out orders that have no rateable items
+    const ordersWithRateableItems = orders.filter(
+      (order) => order.orderItems.length > 0
+    );
+
+    const totalOrders = await prisma.order.count({
+      where: {
+        userId: userId,
+        status: "COMPLETED",
+        orderItems: {
+          some: {
+            Rating: {
+              none: {
+                userId: userId,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        orders: ordersWithRateableItems,
+        pagination: {
+          currentPage: Number(page),
+          totalPages: Math.ceil(totalOrders / Number(limit)),
+          totalOrders,
+          hasNextPage: Number(page) * Number(limit) < totalOrders,
+          hasPrevPage: Number(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching completed orders for rating:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Add rating for a meal from completed order
+export const addMealRating = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { orderItemId, score } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required",
+      });
+    }
+
+    if (!orderItemId || !score) {
+      return res.status(400).json({
+        success: false,
+        message: "Order item ID and rating score are required",
+      });
+    }
+
+    // Validate score range (1-5)
+    if (score < 1 || score > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating score must be between 1 and 5",
+      });
+    }
+
+    // Check if the order item exists and belongs to the user
+    const orderItem = await prisma.orderItem.findFirst({
+      where: {
+        id: orderItemId,
+        order: {
+          userId: userId,
+          status: "COMPLETED", // Only allow rating for completed orders
+        },
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+        meal: {
+          select: {
+            id: true,
+            title: true,
+            vendorId: true,
+          },
+        },
+      },
+    });
+
+    if (!orderItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Order item not found or not eligible for rating",
+      });
+    }
+
+    // Check if user has already rated this meal
+    const existingRating = await prisma.rating.findFirst({
+      where: {
+        userId: userId,
+        mealId: orderItem.mealId,
+      },
+    });
+
+    if (existingRating) {
+      return res.status(400).json({
+        success: false,
+        message: "You have already rated this meal",
+      });
+    }
+
+    // Create the rating
+    const rating = await prisma.rating.create({
+      data: {
+        userId: userId,
+        mealId: orderItem.mealId,
+        orderItemId: orderItemId,
+        score: score,
+      },
+      include: {
+        meal: {
+          select: {
+            id: true,
+            title: true,
+            image: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Send notification to vendor about the new rating
+    try {
+      await saveNotification({
+        title: "New Rating Received",
+        message: `You received a ${score}-star rating for "${orderItem.meal.title}"`,
+        userId: orderItem.meal.vendorId,
+        role: "VENDOR",
+      });
+    } catch (notificationError) {
+      console.error("Error sending rating notification:", notificationError);
+      // Don't fail the rating creation if notification fails
+    }
+
+    return res.status(201).json({
+      success: true,
+      message: "Rating added successfully",
+      data: rating,
+    });
+  } catch (error) {
+    console.error("Error adding meal rating:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+// Get user's rating history
+export const getUserRatingHistory = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required",
+      });
+    }
+
+    const ratings = await prisma.rating.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        meal: {
+          select: {
+            id: true,
+            title: true,
+            image: true,
+            type: true,
+            vendor: {
+              select: {
+                id: true,
+                name: true,
+                businessName: true,
+                logo: true,
+              },
+            },
+          },
+        },
+        orderItem: {
+          select: {
+            id: true,
+            order: {
+              select: {
+                id: true,
+                createdAt: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
+
+    const totalRatings = await prisma.rating.count({
+      where: {
+        userId: userId,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ratings,
+        pagination: {
+          currentPage: Number(page),
+          totalPages: Math.ceil(totalRatings / Number(limit)),
+          totalRatings,
+          hasNextPage: Number(page) * Number(limit) < totalRatings,
+          hasPrevPage: Number(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user rating history:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};

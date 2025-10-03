@@ -994,6 +994,8 @@ export const updateUserProfile = async (req, res) => {
 
   const profileImage = req.file ? req.file.filename : null;
 
+  console.log("data", req.body);
+  console.log("profileImage", profileImage);
   try {
     const existingUser = await prisma.user.findUnique({ where: { id } });
 

@@ -989,14 +989,8 @@ export const updateUserProfile = async (req, res) => {
     return res.status(400).json({ message: "Invalid user ID" });
   }
 
-  const {
-    name,
-    // email,  <- users should not update email
-    phoneNumber,
-    gender,
-    // longitude,
-    // latitude,
-  } = req.body;
+  // All fields are optional
+  const { name, phoneNumber, gender, longitude, latitude } = req.body;
 
   const profileImage = req.file ? req.file.filename : null;
 
@@ -1007,7 +1001,7 @@ export const updateUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found or deleted" });
     }
 
-    // Check phone number uniqueness
+    // Check phone number uniqueness if provided and changed
     if (phoneNumber && phoneNumber !== existingUser.phoneNumber) {
       const phoneExists = await prisma.user.findFirst({
         where: { phoneNumber, NOT: { id } },
@@ -1017,18 +1011,28 @@ export const updateUserProfile = async (req, res) => {
       }
     }
 
+    // Build update data object with only provided fields
+    const updateData = {};
+    if (typeof name !== "undefined") updateData.name = name;
+    if (typeof phoneNumber !== "undefined")
+      updateData.phoneNumber = phoneNumber;
+    if (typeof gender !== "undefined") updateData.gender = gender;
+    if (typeof longitude !== "undefined")
+      updateData.longitude = longitude ? parseFloat(longitude) : null;
+    if (typeof latitude !== "undefined")
+      updateData.latitude = latitude ? parseFloat(latitude) : null;
+    if (profileImage) updateData.profileImage = `uploads/users/${profileImage}`;
+
+    // If no fields provided, return error
+    if (Object.keys(updateData).length === 0) {
+      return res
+        .status(400)
+        .json({ message: "No profile fields provided to update" });
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        name,
-        phoneNumber,
-        gender,
-        // longitude: longitude ? parseFloat(longitude) : undefined,
-        // latitude: latitude ? parseFloat(latitude) : undefined,
-        profileImage: profileImage
-          ? `uploads/users/${profileImage}`
-          : undefined,
-      },
+      data: updateData,
       select: {
         id: true,
         name: true,
@@ -1042,7 +1046,7 @@ export const updateUserProfile = async (req, res) => {
       },
     });
 
-    // ✅ Save notification
+    // Save notification
     await saveNotification({
       title: "Profile Updated",
       message: "Your user profile was successfully updated.",

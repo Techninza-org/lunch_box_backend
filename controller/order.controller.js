@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
-import { sendUserNotification, sendVendorNotification } from "../utils/pushNoti.js";
+import {
+  sendUserNotification,
+  sendVendorNotification,
+} from "../utils/pushNoti.js";
 
 const prisma = new PrismaClient();
 
@@ -23,8 +26,8 @@ export const createOrder = async (req, res) => {
       subscriptionStartDate,
       orderNotes,
       walletTransactionId,
-      finalPaymentAmount,  // Fixed field name
-      finalDeliveryCharges,  // Fixed field name
+      finalPaymentAmount, // Fixed field name
+      finalDeliveryCharges, // Fixed field name
       deliveryChargeperUnit,
     } = req.body;
 
@@ -121,13 +124,13 @@ export const createOrder = async (req, res) => {
 
     // Calculate pricing
     const subtotal =
-      (finalPaymentAmount !== undefined && finalPaymentAmount !== null)
+      finalPaymentAmount !== undefined && finalPaymentAmount !== null
         ? parseFloat(finalPaymentAmount)
         : cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
     const taxes = 0;
     const discount = 0; // Can be implemented later
-    const totalAmount = subtotal + deliveryCharges + taxes - discount;
+    const totalAmount = subtotal + taxes - discount;
 
     console.log("💰 Pricing:", {
       subtotal,
@@ -214,9 +217,10 @@ export const createOrder = async (req, res) => {
           subscriptionEndDate: subscriptionEndDate,
           totalMealsInSubscription: totalMealsInSubscription,
           orderNotes: orderNotes || "",
-          walletTransactionId: walletTransactionId ? parseInt(walletTransactionId) : null,
+          walletTransactionId: walletTransactionId
+            ? parseInt(walletTransactionId)
+            : null,
           deliveryChargeperUnit: deliveryChargeperUnit || 0,
-
         },
       });
       console.log("✅ Order created:", newOrder.id);
@@ -238,7 +242,6 @@ export const createOrder = async (req, res) => {
             unitPrice: cartItem.meal.basePrice,
             totalPrice: cartItem.totalPrice,
             deliveryChargeperUnit: deliveryChargeperUnit || 0,
-
           },
         });
 
@@ -353,7 +356,6 @@ export const createOrder = async (req, res) => {
   }
 };
 
-
 /**
  * Helper function to create meal schedules
  */
@@ -372,7 +374,7 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
       eveningEnd: true,
       dinnerStart: true,
       dinnerEnd: true,
-    }
+    },
   });
 
   if (!vendor) {
@@ -389,7 +391,10 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
       orderItemId: orderItem.id,
       vendorId: order.vendorId, // Add vendor ID for delivery operations
       scheduledDate: deliveryDate,
-      scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
+      scheduledTimeSlot: getVendorTimeSlotForMealType(
+        vendor,
+        orderItem.mealType
+      ),
       mealType: orderItem.mealType,
       mealTitle: orderItem.mealTitle,
       mealImage: orderItem.mealImage,
@@ -407,7 +412,10 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
           orderItemId: orderItem.id,
           vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
-          scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
+          scheduledTimeSlot: getVendorTimeSlotForMealType(
+            vendor,
+            orderItem.mealType
+          ),
           mealType: orderItem.mealType,
           mealTitle: orderItem.mealTitle,
           mealImage: orderItem.mealImage,
@@ -427,7 +435,10 @@ async function createMealSchedules(tx, order, orderItem, orderType, startDate) {
           orderItemId: orderItem.id,
           vendorId: order.vendorId, // Add vendor ID for delivery operations
           scheduledDate: scheduleDate,
-          scheduledTimeSlot: getVendorTimeSlotForMealType(vendor, orderItem.mealType),
+          scheduledTimeSlot: getVendorTimeSlotForMealType(
+            vendor,
+            orderItem.mealType
+          ),
           mealType: orderItem.mealType,
           mealTitle: orderItem.mealTitle,
           mealImage: orderItem.mealImage,
